@@ -1,0 +1,17 @@
+{
+  "repositories": [
+    {
+      "type": "git",
+      "url": "git@github.com:davidwdan/Rx.PHP.git"
+    }
+  ],
+  "require": {
+    "react/socket-client": "0.4.*",
+    "asm89/rx.php": "dev-master"
+  },
+  "autoload": {
+    "psr-0": {
+      "PgAsync": "src"
+    }
+  }
+}
