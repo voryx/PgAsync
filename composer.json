@@ -1,4 +1,32 @@
 {
+  "name": "voryx/pgasync",
+  "type": "library",
+  "description": "Async Reactive Postgres Driver for PHP (Non-blocking)",
+  "keywords": [
+    "async",
+    "postgresql",
+    "postgres",
+    "pgsql",
+    "react",
+    "reactive",
+    "driver",
+    "rx.php"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Matt Bonneau", "email": "matt@bonneau.net", "role": "Developer"
+    },
+
+    {
+      "name": "David Dan", "email": "davidwdan@gmail.com", "role": "Developer"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "PgAsync\\": "src/PgAsync/"
+    }
+  },
   "repositories": [
     {
       "type": "git",
@@ -8,10 +36,5 @@
   "require": {
     "react/socket-client": "0.4.*",
     "asm89/rx.php": "dev-master"
-  },
-  "autoload": {
-    "psr-0": {
-      "PgAsync": "src"
-    }
   }
 }
