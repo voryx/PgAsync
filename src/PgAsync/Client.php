@@ -4,20 +4,17 @@
 namespace PgAsync;
 
 
-use Evenement\EventEmitter;
 use Evenement\EventEmitterInterface;
 use Evenement\EventEmitterTrait;
 use PgAsync\Message\CommandInterface;
 use PgAsync\Message\Describe;
 use PgAsync\Message\Parse;
 use PgAsync\Message\Query;
-use PgAsync\Message\SSLRequest;
 use PgAsync\Message\StartupMessage;
 use React\EventLoop\LoopInterface;
 use React\Promise\Deferred;
 use React\SocketClient\Connector;
 use React\Stream\Stream;
-use SebastianBergmann\Exporter\Exception;
 
 /**
  * Class Client
@@ -56,7 +53,7 @@ class Client implements EventEmitterInterface
     /** @var  Stream */
     protected $stream;
 
-    /** @var bool  */
+    /** @var bool */
     protected $readyForQuery = false;
 
     /** @var  \SplQueue */
@@ -81,58 +78,65 @@ class Client implements EventEmitterInterface
     {
         $this->connectString = $connectString;
         $this->loop          = $loop;
-        $this->commandQueue    = new \SplQueue();
+        $this->commandQueue  = new \SplQueue();
     }
 
-    public function connect($parameters = null) {
+    public function connect($parameters = null)
+    {
         if (!is_array($parameters) ||
-            !isset($parameters['user']) ||
-            !isset($parameters['database'])
+          !isset($parameters['user']) ||
+          !isset($parameters['database'])
         ) {
             throw new \InvalidArgumentException("Parameters must be an associative array with at least 'database' and 'user' set.");
         }
 
         $dnsResolverFactory = new \React\Dns\Resolver\Factory();
-        $dns = $dnsResolverFactory->createCached('8.8.8.8', $this->loop);
-        $this->socket = new Connector($this->loop,$dns);
+        $dns                = $dnsResolverFactory->createCached('8.8.8.8', $this->loop);
+        $this->socket       = new Connector($this->loop, $dns);
 
         $deferred = new Deferred();
 
-        $this->socket->create('127.0.0.1', 5432)->then(function (Stream $stream) use ($deferred, $parameters) {
-            $this->stream = $stream;
+        $this->socket->create('127.0.0.1', 5432)->then(
+          function (Stream $stream) use ($deferred, $parameters) {
+              $this->stream = $stream;
 
-            $this->protoState = "STARTUP";
+              $this->protoState = "STARTUP";
 
-            $stream->on('data', [$this, 'onData']);
+              $stream->on('data', [$this, 'onData']);
 
 //            $ssl = new SSLRequest();
 //            $stream->write($ssl->encodedMessage());
 
-            $startup = new StartupMessage();
-            $startup->setParameters($parameters);
-            $stream->write($startup->encodedMessage());
+              $startup = new StartupMessage();
+              $startup->setParameters($parameters);
+              $stream->write($startup->encodedMessage());
 
-            //$stream->on('drain', function () use ($stream) {
+              //$stream->on('drain', function () use ($stream) {
 
-            //});
+              //});
 
-            $deferred->resolve();
-        },function () use ($deferred) {
-            $deferred->reject();
-        });
+              $deferred->resolve();
+          },
+          function () use ($deferred) {
+              $deferred->reject();
+          }
+        );
 
         return $deferred->promise();
     }
 
-    public function query($s) {
+    public function query($s)
+    {
         $q = new Query($s);
         $this->commandQueue->enqueue($q);
 
         $this->processQueue();
+
         return $q->getSubject();
     }
 
-    public function processQueue() {
+    public function processQueue()
+    {
         if ($this->commandQueue->count() > 0 && $this->readyForQuery) {
             /** @var Query $q */
             $q = $this->commandQueue->dequeue();
@@ -141,9 +145,11 @@ class Client implements EventEmitterInterface
         }
     }
 
-    public function onData($data) {
+    public function onData($data)
+    {
         if ($this->currentParser) {
             call_user_func($this->currentParser, $data);
+
             return;
         }
 
@@ -152,21 +158,22 @@ class Client implements EventEmitterInterface
         }
 
         $this->currentMsg = "";
-        $this->msgLen = 0;
+        $this->msgLen     = 0;
 
         $type = $data[0];
 
-        if (in_array($type, ['R','S','D','K','2','3','C','d','c','G','H','W','D','I','E','V','n','N','A','t','1','s','Z','T'])) {
+        if (in_array($type, ['R', 'S', 'D', 'K', '2', '3', 'C', 'd', 'c', 'G', 'H', 'W', 'D', 'I', 'E', 'V', 'n', 'N', 'A', 't', '1', 's', 'Z', 'T'])) {
             $this->currentParser = [$this, 'parse1PlusLenMessage'];
             call_user_func($this->currentParser, $data);
         } else {
-            echo "Unhandled message \"" . $type . "\"";
+            echo "Unhandled message \"".$type."\"";
         }
 
         //echo $data;
     }
 
-    public function parse1PlusLenMessage($data) {
+    public function parse1PlusLenMessage($data)
+    {
         $this->currentMsg .= $data;
 
         $len = strlen($this->currentMsg);
@@ -208,7 +215,8 @@ class Client implements EventEmitterInterface
         }
     }
 
-    public function parse1($data) {
+    public function parse1($data)
+    {
         $this->currentCommand->complete();
     }
 
@@ -217,35 +225,36 @@ class Client implements EventEmitterInterface
      *
      * @param $data
      */
-    public function parseC($data) {
+    public function parseC($data)
+    {
         $completeTag = substr($data, 5);
-        $parts = explode(" ", $completeTag);
+        $parts       = explode(" ", $completeTag);
         if (isset($parts[0])) {
             switch ($parts[0]) {
                 case "INSERT":
-                    echo $parts[1] . " inserted.";
+                    echo $parts[1]." inserted.";
                     if ($parts[1] == 1 && $parts[2] != 0) {
-                        echo " (oid " . $parts[2] . ")";
+                        echo " (oid ".$parts[2].")";
                     }
                     echo "\n";
                     break;
                 case "DELETE":
-                    echo $parts[1] . " deleted.\n";
+                    echo $parts[1]." deleted.\n";
                     break;
                 case "UPDATE":
-                    echo $parts[1] . " updated.\n";
+                    echo $parts[1]." updated.\n";
                     break;
                 case "SELECT":
-                    echo $parts[1] . " returned.\n";
+                    echo $parts[1]." returned.\n";
                     break;
                 case "MOVE":
-                    echo $parts[1] . " moved.\n";
+                    echo $parts[1]." moved.\n";
                     break;
                 case "FETCH":
-                    echo $parts[1] . " returned.\n";
+                    echo $parts[1]." returned.\n";
                     break;
                 case "COPY":
-                    echo $parts[1] . " copied.\n";
+                    echo $parts[1]." copied.\n";
                     break;
             }
         }
@@ -253,12 +262,15 @@ class Client implements EventEmitterInterface
         $this->currentCommand->complete();
     }
 
-    public function parseE($data) {
+    public function parseE($data)
+    {
         $rawMsgs = substr($data, 5);
-        $parts = explode("\0", $rawMsgs);
+        $parts   = explode("\0", $rawMsgs);
 
         foreach ($parts as $part) {
-            if (strlen($part) < 2) break;
+            if (strlen($part) < 2) {
+                break;
+            }
             $fieldType = $part[0];
 
             switch ($fieldType) {
@@ -291,16 +303,18 @@ class Client implements EventEmitterInterface
      *
      * @param $data
      */
-    public function parseI($data) {
+    public function parseI($data)
+    {
         if ($this->currentCommand) {
             $this->currentCommand->complete();
             $this->currentCommand = null;
         }
     }
 
-    public function parseR($data) {
+    public function parseR($data)
+    {
         $authCode = unpack("N", substr($data, 5, 4))[1];
-        echo "authCode is " . $authCode . "\n";
+        echo "authCode is ".$authCode."\n";
     }
 
     public function parseS($data)
@@ -308,16 +322,21 @@ class Client implements EventEmitterInterface
         $payload = substr($this->currentMsg, 5, $this->msgLen - 5);
 
         $paramParts = explode("\0", $payload);
-        $param = [$paramParts[0] => $paramParts[1]];
+        $param      = [$paramParts[0] => $paramParts[1]];
 
         $this->params[] = $param;
     }
 
-    public function parseZ($data) {
-        if ($this->msgLen != 5) throw new \Exception;
+    public function parseZ($data)
+    {
+        if ($this->msgLen != 5) {
+            throw new \Exception;
+        }
 
         $this->backendTransactionStatus = $data[5];
-        if (!in_array($this->backendTransactionStatus, ['I','T','E'])) throw new \Exception;
+        if (!in_array($this->backendTransactionStatus, ['I', 'T', 'E'])) {
+            throw new \Exception;
+        }
 
         $this->setReadyForQuery(true);
 
@@ -329,13 +348,16 @@ class Client implements EventEmitterInterface
      *
      * @param $data
      */
-    public function parseT($data) {
+    public function parseT($data)
+    {
         $len = strlen($data);
-        if ($len < 7) throw new \UnderflowException;
+        if ($len < 7) {
+            throw new \UnderflowException;
+        }
 
         $columnCount = unpack("n", substr($data, 5, 2))[1];
         $columnStart = 7;
-        $columns = [];
+        $columns     = [];
         for ($i = 0; $i < $columnCount; $i++) {
             $column = new Column();
 
@@ -344,8 +366,8 @@ class Client implements EventEmitterInterface
                 throw new \InvalidArgumentException;
             }
 
-            $column->name = substr($data, $columnStart, $strEnd - $columnStart);
-            $pos = $strEnd + 1;
+            $column->name     = substr($data, $columnStart, $strEnd - $columnStart);
+            $pos              = $strEnd + 1;
             $column->tableOid = unpack("N", substr($data, $pos, 4))[1];
             $pos += 4;
             $column->attrNo = unpack("n", substr($data, $pos, 2))[1];
@@ -358,30 +380,35 @@ class Client implements EventEmitterInterface
             $pos += 4;
             $column->formatCode = unpack("n", substr($data, $pos, 2))[1];
             $pos += 2;
-            $columns[] = $column;
+            $columns[]   = $column;
             $columnStart = $pos;
         }
 
         $this->currentCommand->addColumns($columns);
     }
 
-    public function parseD($data) {
+    public function parseD($data)
+    {
         $len = strlen($data);
         if ($len < 8) {
             throw new \UnderflowException;
         }
 
-        $columnCount = unpack("n", substr($data, 5, 2))[1];
+        $columnCount  = unpack("n", substr($data, 5, 2))[1];
         $columnValues = [];
-        $columnStart = 7;
+        $columnStart  = 7;
         for ($i = 0; $i < $columnCount; $i++) {
-            if ($len < $columnStart + 4) throw new \UnderflowException;
+            if ($len < $columnStart + 4) {
+                throw new \UnderflowException;
+            }
             $columnLen = unpack("N", substr($data, $columnStart, 4))[1];
             if ($columnLen == 4294967295) {
-                $columnLen = 0;
+                $columnLen      = 0;
                 $columnValues[] = null;
             } else {
-                if ($len < $columnStart + 4 + $columnLen) throw new \UnderflowException;
+                if ($len < $columnStart + 4 + $columnLen) {
+                    throw new \UnderflowException;
+                }
                 $columnValues[] = substr($data, $columnStart + 4, $columnLen);
             }
             $columnStart += 4 + $columnLen;
@@ -415,17 +442,21 @@ class Client implements EventEmitterInterface
         $this->processQueue();
     }
 
-    public function prepare($queryString, $name = '') {
+    public function prepare($queryString, $name = '')
+    {
         $prepare = new Parse($name, $queryString);
         $this->commandQueue->enqueue($prepare);
         $this->processQueue();
+
         return $prepare->getSubject();
     }
 
-    public function describePreparedStatement($name = '') {
+    public function describePreparedStatement($name = '')
+    {
         $describe = new Describe($name);
         $this->commandQueue->enqueue($describe);
         $this->processQueue();
+
         return $describe->getSubject();
     }
 }
