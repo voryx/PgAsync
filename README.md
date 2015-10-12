@@ -30,6 +30,17 @@ $client->query('SELECT * FROM channel')->subscribe(new \Rx\Observer\CallbackObse
 $loop->run();
 ```
 
+## Install
+With [composer](https://getcomposer.org/) install into you project with:
+
+Install the Rx.PHP dependency (please note that we sometimes are using the davidwdan fork for development):
+```composer require asm89/rx.php:dev-master```
+
+Install pgasync:
+```composer require voryx/pgadmin:dev-master```
+
+* Note that Rx.PHP is under heavy development - you may want to check the forks.
+
 ## What it can do
 - Run queries (CREATE, UPDATE, INSERT, SELECT)
 - Queue commands
