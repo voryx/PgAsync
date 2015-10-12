@@ -172,7 +172,7 @@ class Client implements EventEmitterInterface
         $len = strlen($this->currentMsg);
         if ($len >= 5) {
             $this->msgLen = unpack("N", substr($this->currentMsg, 1, 4))[1];
-            if ($this->msgLen > 0 && $len >= $this->msgLen) {
+            if ($this->msgLen > 0 && $len > $this->msgLen) {
                 $theMessage = substr($this->currentMsg, 0, $this->msgLen + 1);
                 switch ($theMessage[0]) {
                     case "1": // parse complete
