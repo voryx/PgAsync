@@ -10,7 +10,7 @@ trait CommandTrait {
     private $subject;
 
     public function complete() {
-        $this->subject->onCompleted();
+        $this->getSubject()->onCompleted();
     }
 
     public function error(\Exception $exception = null) {
@@ -18,7 +18,7 @@ trait CommandTrait {
             $exception = new \Exception("Unknown Error");
         }
 
-        $this->subject->onError($exception);
+        $this->getSubject()->onError($exception);
     }
 
     /**
@@ -26,6 +26,9 @@ trait CommandTrait {
      */
     public function getSubject()
     {
+        if ($this->subject === null) {
+            $this->subject = new Subject();
+        }
         return $this->subject;
     }
 }

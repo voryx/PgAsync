@@ -35,6 +35,10 @@ class Parse extends Message implements CommandInterface
             $this->queryString . "\0" .
             "\0\0"
 
-        ) . "S\0\0\0\x04"; // sync command
+        );
+    }
+
+    public function shouldWaitForComplete() {
+        return false;
     }
 }

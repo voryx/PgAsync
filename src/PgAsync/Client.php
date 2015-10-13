@@ -6,15 +6,20 @@ namespace PgAsync;
 
 use Evenement\EventEmitterInterface;
 use Evenement\EventEmitterTrait;
+use PgAsync\Message\Bind;
 use PgAsync\Message\CommandInterface;
 use PgAsync\Message\Describe;
+use PgAsync\Message\Execute;
 use PgAsync\Message\Parse;
 use PgAsync\Message\Query;
 use PgAsync\Message\StartupMessage;
+use PgAsync\Message\Sync;
 use React\EventLoop\LoopInterface;
 use React\Promise\Deferred;
 use React\SocketClient\Connector;
 use React\Stream\Stream;
+use Rx\Observable\AnonymousObservable;
+use Rx\ObserverInterface;
 
 /**
  * Class Client
@@ -69,6 +74,10 @@ class Client implements EventEmitterInterface
      * @var string
      */
     protected $backendTransactionStatus = "UNKNOWN";
+
+    // should probably be part of a "current query" maybe?
+    protected $columns = [];
+    protected $columnNames = [];
 
     /**
      * @param $connectString
@@ -137,11 +146,14 @@ class Client implements EventEmitterInterface
 
     public function processQueue()
     {
-        if ($this->commandQueue->count() > 0 && $this->readyForQuery) {
-            /** @var Query $q */
-            $q = $this->commandQueue->dequeue();
-            $this->stream->write($q->encodedMessage());
-            $this->currentCommand = $q;
+        while ($this->commandQueue->count() > 0 && $this->readyForQuery) {
+            /** @var CommandInterface $c */
+            $c = $this->commandQueue->dequeue();
+            $this->stream->write($c->encodedMessage());
+            if ($c->shouldWaitForComplete()) {
+                $this->currentCommand = $c;
+                return;
+            }
         }
     }
 
@@ -217,7 +229,7 @@ class Client implements EventEmitterInterface
 
     public function parse1($data)
     {
-        $this->currentCommand->complete();
+        //$this->currentCommand->complete();
     }
 
     /**
@@ -229,32 +241,33 @@ class Client implements EventEmitterInterface
     {
         $completeTag = substr($data, 5);
         $parts       = explode(" ", $completeTag);
+        $completeDescription = "";
         if (isset($parts[0])) {
             switch ($parts[0]) {
                 case "INSERT":
-                    echo $parts[1]." inserted.";
+                    $completeDescription = $parts[1]." inserted.";
                     if ($parts[1] == 1 && $parts[2] != 0) {
-                        echo " (oid ".$parts[2].")";
+                        $completeDescription .= " (oid ".$parts[2].")";
                     }
-                    echo "\n";
+                    $completeDescription .= "\n";
                     break;
                 case "DELETE":
-                    echo $parts[1]." deleted.\n";
+                    $completeDescription = $parts[1]." deleted.\n";
                     break;
                 case "UPDATE":
-                    echo $parts[1]." updated.\n";
+                    $completeDescription = $parts[1]." updated.\n";
                     break;
                 case "SELECT":
-                    echo $parts[1]." returned.\n";
+                    $completeDescription = $parts[1]." returned.\n";
                     break;
                 case "MOVE":
-                    echo $parts[1]." moved.\n";
+                    $completeDescription = $parts[1]." moved.\n";
                     break;
                 case "FETCH":
-                    echo $parts[1]." returned.\n";
+                    $completeDescription = $parts[1]." returned.\n";
                     break;
                 case "COPY":
-                    echo $parts[1]." copied.\n";
+                    $completeDescription = $parts[1]." copied.\n";
                     break;
             }
         }
@@ -314,7 +327,7 @@ class Client implements EventEmitterInterface
     public function parseR($data)
     {
         $authCode = unpack("N", substr($data, 5, 4))[1];
-        echo "authCode is ".$authCode."\n";
+        //echo "authCode is ".$authCode."\n";
     }
 
     public function parseS($data)
@@ -384,7 +397,7 @@ class Client implements EventEmitterInterface
             $columnStart = $pos;
         }
 
-        $this->currentCommand->addColumns($columns);
+        $this->addColumns($columns);
     }
 
     public function parseD($data)
@@ -417,7 +430,7 @@ class Client implements EventEmitterInterface
         }
 
         if ($this->currentCommand) {
-            $this->currentCommand->addRow($columnValues);
+            $this->addRow($columnValues);
         }
 
         if ($len != $columnStart) {
@@ -439,16 +452,61 @@ class Client implements EventEmitterInterface
     public function setReadyForQuery($readyForQuery)
     {
         $this->readyForQuery = $readyForQuery;
+        $this->columnNames = [];
+        $this->columns = [];
         $this->processQueue();
     }
 
-    public function prepare($queryString, $name = '')
+    public function executeStatement($queryString, $parameters)
     {
-        $prepare = new Parse($name, $queryString);
-        $this->commandQueue->enqueue($prepare);
-        $this->processQueue();
+        /**
+         * http://git.postgresql.org/gitweb/?p=postgresql.git;a=blob;f=src/interfaces/libpq/fe-exec.c;h=828f18e1110119efc3bf99ecf16d98ce306458ea;hb=6bcce25801c3fcb219e0d92198889ec88c74e2ff#l1381
+         *
+         * Should make this return a Statement object
+         *
+         * To use prepared statements, looks like we need to:
+         * - Parse (if needed?) (P)
+         * - Bind (B)
+         *   - Parameter Stuff
+         * - Describe portal (D)
+         * - Execute (E)
+         * - Sync (S)
+         *
+         * Expect back
+         * - Parse Complete (1)
+         * - Bind Complete (2)
+         * - Row Description (T)
+         * - Row Data (D) 0..n
+         * - Command Complete (C)
+         * - Ready for Query (Z)
+         */
 
-        return $prepare->getSubject();
+        return new AnonymousObservable(
+            function (ObserverInterface $observer) use ($queryString, $parameters) {
+                $name = "somestatement";
+
+                $prepare = new Parse($name, $queryString);
+                $this->commandQueue->enqueue($prepare);
+
+                $bind = new Bind($parameters, $name);
+                $this->commandQueue->enqueue($bind);
+
+                $describe = new Describe();
+                $this->commandQueue->enqueue($describe);
+
+                $execute = new Execute();
+                $this->commandQueue->enqueue($execute);
+
+                $sync = new Sync();
+                $this->commandQueue->enqueue($sync);
+
+                $disposable = $sync->getSubject()->subscribe($observer);
+
+                $this->processQueue();
+
+                return $disposable;
+            }
+        );
     }
 
     public function describePreparedStatement($name = '')
@@ -458,5 +516,26 @@ class Client implements EventEmitterInterface
         $this->processQueue();
 
         return $describe->getSubject();
+    }
+
+    /**
+     * Add Column information (from T)
+     *
+     * @param $columns
+     */
+    public function addColumns($columns)
+    {
+        $this->columns     = $columns;
+        $this->columnNames = array_map(function ($column) {
+            return $column->name;
+        }, $this->columns);
+    }
+
+    public function addRow($row)
+    {
+        $row = array_combine($this->columnNames, $row);
+        if ($this->currentCommand) {
+            $this->currentCommand->getSubject()->onNext($row);
+        }
     }
 }
