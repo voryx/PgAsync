@@ -7,6 +7,7 @@ namespace PgAsync;
 use Evenement\EventEmitterInterface;
 use Evenement\EventEmitterTrait;
 use PgAsync\Message\Bind;
+use PgAsync\Message\Close;
 use PgAsync\Message\CommandInterface;
 use PgAsync\Message\Describe;
 use PgAsync\Message\Execute;
@@ -484,6 +485,9 @@ class Client implements EventEmitterInterface
         return new AnonymousObservable(
             function (ObserverInterface $observer) use ($queryString, $parameters) {
                 $name = "somestatement";
+
+                $close = new Close($name);
+                $this->commandQueue->enqueue($close);
 
                 $prepare = new Parse($name, $queryString);
                 $this->commandQueue->enqueue($prepare);

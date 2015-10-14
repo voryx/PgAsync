@@ -11,19 +11,31 @@ $client->connect([
     "database" => "matt"
 ]);
 
-$statement = $client->executeStatement("SELECT * FROM channel WHERE id = $1", ['2']);
-
-$statement
-    ->subscribe(new \Rx\Observer\CallbackObserver(
+$jsonObserverFactory = function () {
+    return new \Rx\Observer\CallbackObserver(
         function ($row) {
             echo json_encode($row) . "\n";
         },
         function ($err) {
-
+            echo "ERROR: " . json_encode($err) . "\n";
         },
         function () {
             echo "Complete.";
         }
-    ));
+    );
+};
+
+$statement = $client->executeStatement("SELECT * FROM channel WHERE id = $1", ['2']);
+
+$statement
+    ->subscribe($jsonObserverFactory());
+
+$insertStatement = $client->executeStatement("InSErT INTO channel(name, description) VALUES($1, $2)", ['The name', null]);
+
+$insertStatement
+    ->subscribe($jsonObserverFactory());
+
+$statement
+    ->subscribe($jsonObserverFactory());
 
 $loop->run();
