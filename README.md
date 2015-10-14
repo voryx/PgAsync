@@ -1,19 +1,24 @@
 # ReactivePostgres
-Async Reactive Postgres Driver for PHP (Non-blocking)
+Asynchronous Reactive Postgres Library for PHP (Non-blocking)
 
 ## What it is
-This is an experimental asynchronous Postgres driver for PHP based on [Rx.PHP](https://github.com/asm89/Rx.PHP) and [ReactPHP](http://reactphp.org/).
+This is an asynchronous Postgres library for PHP. Observables are returned by the query
+methods allowing asynchronous row-by-row data handling (and other Rx operators on the data)
+See [Rx.PHP](https://github.com/asm89/Rx.PHP). Network and event processing is handled by
+[ReactPHP](http://reactphp.org/).
+
+This is a pure PHP implementation (you don't need Postgres extensions to use it).
 
 ## Example - Simple Query
 ```php
 $loop = \React\EventLoop\Factory::create();
 
-$client = new PgAsync\Client('file:/tmp/.s.PGSQL.5432', $loop);
-
-$client->connect([
+$client = new PgAsync\Client([
+    "host" => "127.0.0.1",
+    "port" => "5432",
     "user"     => "matt",
     "database" => "matt"
-]);
+], $loop);
 
 $client->query('SELECT * FROM channel')->subscribe(new \Rx\Observer\CallbackObserver(
     function ($row) {
@@ -34,12 +39,12 @@ $loop->run();
 ```php
 $loop = \React\EventLoop\Factory::create();
 
-$client = new PgAsync\Client('file:/tmp/.s.PGSQL.5432', $loop);
-
-$client->connect([
-    "user"     => "matt",
-    "database" => "matt"
-]);
+$client = new PgAsync\Client([
+     "host" => "127.0.0.1",
+     "port" => "5432",
+     "user"     => "matt",
+     "database" => "matt"
+], $loop);
 
 $client->executeStatement('SELECT * FROM channel WHERE id = $1', ['5'])
     ->subscribe(new \Rx\Observer\CallbackObserver(
@@ -69,17 +74,16 @@ Install pgasync:
 * Note that Rx.PHP is under heavy development - you may want to check the forks.
 
 ## What it can do
-- Run queries (CREATE, UPDATE, INSERT, SELECT)
+- Run queries (CREATE, UPDATE, INSERT, SELECT, DELETE)
 - Queue commands
 - Return results asynchronously (using Observables - you get data one row at a time as it comes from the db server)
-- Prepared statements (well - just as parameterized queries)
+- Prepared statements (as parameterized queries)
+- Connection pooling (basic pooling)
 
 ## What it can't quite do yet
-- Connection pooling (to allow multiple queries at once)
 - Transactions
 
 ## What's next
-- Add Connection pooling
 - Add more testing
 - Transactions
 - Take over the world

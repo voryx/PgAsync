@@ -4,7 +4,12 @@ require_once __DIR__ . '/bootstrap.php';
 $loop = \React\EventLoop\Factory::create();
 
 
-$client = new PgAsync\Client('file:/tmp/.s.PGSQL.5432', $loop);
+$client = new PgAsync\Client([
+    "host" => "127.0.0.1",
+    "port" => "5432",
+    "user"     => "matt",
+    "database" => "matt"
+], $loop);
 
 $insert = $client->query("INSERT INTO channel(name, description) VALUES('Test Name', 'This was inserted using the PgAsync thing')");
 

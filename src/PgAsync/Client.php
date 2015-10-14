@@ -21,17 +21,19 @@ class Client implements EventEmitterInterface
 
     protected $params = [];
 
+    private $parameters = [];
+
     /** @var Connection[] */
     private $connections = [];
 
     /**
-     * @param $connectString
+     * @param $parameters
      * @param $loop
      */
-    function __construct($connectString, $loop)
+    function __construct($parameters, $loop)
     {
-        $this->connectString = $connectString;
-        $this->loop          = $loop;
+        $this->parameters = $parameters;
+        $this->loop       = $loop;
     }
 
     public function query($s)
@@ -41,9 +43,11 @@ class Client implements EventEmitterInterface
         return $conn->query($s);
     }
 
-    public function executeStatement($queryString, $parameters)
+    public function executeStatement($queryString, $parameters = [])
     {
         $conn = $this->getIdleConnection();
+
+        return $conn->executeStatement($queryString, $parameters);
     }
 
     public function getIdleConnection() {
@@ -57,10 +61,7 @@ class Client implements EventEmitterInterface
             }
         }
 
-        $connection = new Connection([
-            "user" => "matt",
-            "database" => "matt"
-        ], $this->loop);
+        $connection = new Connection($this->parameters, $this->loop);
 
         $this->connections[] = $connection;
 

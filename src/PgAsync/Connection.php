@@ -107,6 +107,14 @@ class Connection
             throw new \InvalidArgumentException("Parameters must be an associative array with at least 'database' and 'user' set.");
         }
 
+        if (!isset($parameters['host'])) {
+            $parameters["host"] = "127.0.0.1";
+        }
+
+        if (!isset($parameters['port'])) {
+            $parameters["port"] = "5432";
+        }
+
         $this->parameters = $parameters;
         $this->loop       = $loop;
 
@@ -137,7 +145,7 @@ class Connection
 
         $this->socket = new Connector($this->loop, $this->getDnsResolver());
 
-        $this->socket->create('127.0.0.1', 5432)->then(
+        $this->socket->create($this->parameters["host"], $this->parameters["port"])->then(
             function (Stream $stream) {
                 $this->stream = $stream;
 
@@ -149,8 +157,12 @@ class Connection
 //            $ssl = new SSLRequest();
 //            $stream->write($ssl->encodedMessage());
 
+                $startupParameters = $this->parameters;
+                unset($startupParameters["host"]);
+                unset($startupParameters["port"]);
+
                 $startup = new StartupMessage();
-                $startup->setParameters($this->parameters);
+                $startup->setParameters($startupParameters);
                 $stream->write($startup->encodedMessage());
             },
             function () {
@@ -417,6 +429,6 @@ class Connection
     }
 
     private function debug($string) {
-        echo "DEBIG: " . $string . "\n";
+        //echo "DEBIG: " . $string . "\n";
     }
 }

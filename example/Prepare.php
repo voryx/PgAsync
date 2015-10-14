@@ -4,12 +4,12 @@ require_once __DIR__ . '/bootstrap.php';
 
 $loop = \React\EventLoop\Factory::create();
 
-$client = new PgAsync\Client('file:/tmp/.s.PGSQL.5432', $loop);
-
-$client->connect([
+$client = new PgAsync\Client([
+    "host" => "127.0.0.1",
+    "port" => "5432",
     "user"     => "matt",
     "database" => "matt"
-]);
+], $loop);
 
 $jsonObserverFactory = function () {
     return new \Rx\Observer\CallbackObserver(
