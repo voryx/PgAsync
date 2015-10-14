@@ -4,10 +4,8 @@
 namespace PgAsync\Message;
 
 
-class BackendKeyData implements ParserInterface
+class BackendKeyData extends Message
 {
-    use ParserTrait;
-
     /**
      * @inheritDoc
      */

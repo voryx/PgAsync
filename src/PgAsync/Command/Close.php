@@ -1,7 +1,9 @@
 <?php
 
 
-namespace PgAsync\Message;
+namespace PgAsync\Command;
+
+use PgAsync\Message\Message;
 
 class Close implements CommandInterface
 {

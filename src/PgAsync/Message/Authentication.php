@@ -4,10 +4,8 @@
 namespace PgAsync\Message;
 
 
-class Authentication implements ParserInterface
+class Authentication extends Message
 {
-    use ParserTrait;
-
     const AUTH_OK = 0; // AuthenticationOk
     const AUTH_KERBEROS_V_5 = 2; // AuthenticationKerberosV5
     const AUTH_CLEARTEXT_PASSWORD = 3; // AuthenticationCleartextPassword

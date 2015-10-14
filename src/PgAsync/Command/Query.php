@@ -1,8 +1,9 @@
 <?php
 
 
-namespace PgAsync\Message;
+namespace PgAsync\Command;
 
+use PgAsync\Message\Message;
 use Rx\Subject\Subject;
 
 class Query implements CommandInterface

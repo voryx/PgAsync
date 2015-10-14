@@ -1,11 +1,12 @@
 <?php
 
 
-namespace PgAsync\Message;
+namespace PgAsync\Command;
 
+use PgAsync\Message\Message;
 use Rx\Subject\Subject;
 
-class Parse extends Message implements CommandInterface
+class Parse implements CommandInterface
 {
     use CommandTrait;
     /**

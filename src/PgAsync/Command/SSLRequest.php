@@ -1,10 +1,12 @@
 <?php
 
 
-namespace PgAsync\Message;
+namespace PgAsync\Command;
 
 
-class SSLRequest extends Message {
+class SSLRequest implements CommandInterface {
+    use CommandTrait;
+
     public function encodedMessage() {
         $msg = Message::int32(80877103);
 

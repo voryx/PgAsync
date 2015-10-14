@@ -1,10 +1,14 @@
 <?php
 
 
-namespace PgAsync\Message;
+namespace PgAsync\Command;
 
 
-class StartupMessage {
+use PgAsync\Message\Message;
+
+class StartupMessage implements CommandInterface {
+    use CommandTrait;
+
     /**
      * @var int
      *
@@ -55,4 +59,9 @@ class StartupMessage {
 
         return Message::prependLengthInt32($msg);
     }
-} 
+
+    public function shouldWaitForComplete()
+    {
+        return false;
+    }
+}

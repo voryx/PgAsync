@@ -4,7 +4,9 @@
 namespace PgAsync\Message;
 
 
-class Message {
+abstract class Message implements ParserInterface {
+    use ParserTrait;
+
     static public function int16($i) {
         return pack("n", $i);
     }

@@ -1,7 +1,7 @@
 <?php
 
 
-namespace PgAsync\Message;
+namespace PgAsync\Command;
 
 use Rx\Subject\Subject;
 
