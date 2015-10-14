@@ -17,7 +17,7 @@ $jsonObserverFactory = function () {
             echo json_encode($row) . "\n";
         },
         function ($err) {
-            echo "ERROR: " . json_encode($err) . "\n";
+            echo "ERROR: " . $err . "\n";
         },
         function () {
             echo "Complete.";
@@ -25,7 +25,7 @@ $jsonObserverFactory = function () {
     );
 };
 
-$statement = $client->executeStatement("SELECT * FROM channel WHERE id = $1", ['2']);
+$statement = $client->executeStatement("SELECT * FROM channel WHERE id = $1", ['2', '3']);
 
 $statement
     ->subscribe($jsonObserverFactory());

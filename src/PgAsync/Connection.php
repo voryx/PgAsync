@@ -292,6 +292,10 @@ class Connection
 
     private function handleErrorResponse(ErrorResponse $message)
     {
+        if ($this->currentCommand !== null) {
+            $this->currentCommand->getSubject()->onError(new ErrorException($message));
+            $this->currentCommand = null;
+        }
     }
 
     private function handleNoticeResponse(NoticeResponse $message)
