@@ -2,6 +2,12 @@
 
 namespace PgAsync;
 
+use PgAsync\Command\Bind;
+use PgAsync\Command\Close;
+use PgAsync\Command\Describe;
+use PgAsync\Command\Execute;
+use PgAsync\Command\Parse;
+use PgAsync\Command\Sync;
 use PgAsync\Message\Authentication;
 use PgAsync\Message\BackendKeyData;
 use PgAsync\Message\CommandComplete;
@@ -15,7 +21,6 @@ use PgAsync\Message\Message;
 use PgAsync\Message\NoticeResponse;
 use PgAsync\Message\ParameterStatus;
 use PgAsync\Message\ParseComplete;
-use PgAsync\Message\ParserInterface;
 use PgAsync\Command\Query;
 use PgAsync\Message\ReadyForQuery;
 use PgAsync\Message\RowDescription;
@@ -23,9 +28,13 @@ use PgAsync\Command\StartupMessage;
 use React\EventLoop\LoopInterface;
 use React\SocketClient\Connector;
 use React\Stream\Stream;
+use Rx\Observable\AnonymousObservable;
+use Rx\ObserverInterface;
 
 class Connection
 {
+    // This is copied a lot of these states from the libpq library
+    // Not many of these constants are used right now
     const STATE_IDLE = 0;
     const STATE_BUSY = 1;
     const STATE_READY = 2;
@@ -66,8 +75,25 @@ class Connection
     /** @var \SplQueue */
     private $commandQueue;
 
-    /** @var ParserInterface */
+    /** @var Message */
     private $currentMessage;
+
+    /** @var CommandInterface */
+    private $currentCommand;
+
+    /** @var Column[] */
+    private $columns = [];
+
+    /** @var array */
+    private $columnNames = [];
+
+    /**
+     * Can be 'I' for Idle, 'T' if in transactions block
+     * or 'E' if in failed transaction block (queries will fail until end of trans)
+     *
+     * @var string
+     */
+    private $backendTransactionStatus = "UNKNOWN";
 
     /**
      * Connection constructor.
@@ -135,15 +161,18 @@ class Connection
         );
     }
 
+    public function getState() {
+        return $this->queryState;
+    }
+
     public function onData($data)
     {
         if ($this->currentMessage) {
             $overflow = $this->currentMessage->parseData($data);
-            echo "-" . json_encode($overflow) . "-\n";
+            $this->debug("onData: " . json_encode($overflow) . "");
             if ($overflow === false) {
                 // there was not enough data to complete the message
                 // leave this as the currentParser
-                echo "false\n";
                 return;
             }
 
@@ -180,7 +209,7 @@ class Connection
 
     public function handleMessage($message)
     {
-        echo "Handling " . get_class($message) . "\n";
+        $this->debug("Handling " . get_class($message));
         if ($message instanceof DataRow) {
             $this->handleDataRow($message);
         } elseif ($message instanceof Authentication) {
@@ -212,14 +241,17 @@ class Connection
 
     private function handleDataRow(DataRow $dataRow)
     {
-        foreach($dataRow->getColumnValues() as $value) {
-            echo $value . " ";
+        if ($this->queryState === $this::STATE_BUSY && $this->currentCommand instanceof CommandInterface) {
+            $row = array_combine($this->columnNames, $dataRow->getColumnValues());
+            $this->currentCommand->getSubject()->onNext($row);
         }
-        echo "\n";
     }
 
     private function handleAuthentication(Authentication $message)
     {
+        if ($message->getAuthCode() === $message::AUTH_OK) {
+            $this->connStatus = $this::CONNECTION_AUTH_OK;
+        }
     }
 
     private function handleBackendKeyData(BackendKeyData $message)
@@ -228,7 +260,10 @@ class Connection
 
     private function handleCommandComplete(CommandComplete $message)
     {
-        echo "Complete.\n";
+        if ($this->currentCommand instanceof CommandInterface) {
+            $this->currentCommand->getSubject()->onCompleted();
+        }
+        $this->debug("Command complete.");
     }
 
     private function handleCopyInResponse(CopyInResponse $message)
@@ -253,7 +288,7 @@ class Connection
 
     private function handleParameterStatus(ParameterStatus $message)
     {
-        echo $message->getParameterName() . ": " . $message->getParameterValue() . "\n";
+        $this->debug($message->getParameterName() . ": " . $message->getParameterValue());
     }
 
     private function handleParseComplete(ParseComplete $message)
@@ -262,16 +297,15 @@ class Connection
 
     private function handleReadyForQuery(ReadyForQuery $message)
     {
+        $this->connStatus = $this::CONNECTION_OK;
         $this->queryState = $this::STATE_READY;
+        $this->currentCommand = null;
         $this->processQueue();
     }
 
     private function handleRowDescription(RowDescription $message)
     {
-        foreach($message->getColumns() as $column) {
-            echo $column->name . " ";
-        }
-        echo "\n";
+        $this->addColumns($message->getColumns());
     }
 
     public function processQueue()
@@ -279,8 +313,19 @@ class Connection
         while ($this->commandQueue->count() > 0 && $this->queryState === static::STATE_READY) {
             /** @var CommandInterface $c */
             $c = $this->commandQueue->dequeue();
+            $this->debug("Sending " . get_class($c));
+            if ($c instanceof Query) {
+                $this->debug("Sending simple query: " . $c->getQueryString());
+            }
             $this->stream->write($c->encodedMessage());
             if ($c->shouldWaitForComplete()) {
+                $this->queryState = $this::STATE_BUSY;
+                if ($c instanceof Query) {
+                    $this->queryType = $this::QUERY_SIMPLE;
+                } elseif ($c instanceof Sync) {
+                    $this->queryType = $this::QUERY_EXTENDED;
+                }
+
                 $this->currentCommand = $c;
                 return;
             }
@@ -289,11 +334,89 @@ class Connection
 
     public function query($query)
     {
-        $q = new Query($query);
-        $this->commandQueue->enqueue($q);
+        return new AnonymousObservable(
+            function ($observer) use ($query) {
+                $q = new Query($query);
+                $this->commandQueue->enqueue($q);
 
-        $this->processQueue();
+                $disposable = $q->getSubject()->subscribe($observer);
 
-        return $q->getSubject();
+                $this->processQueue();
+
+                return $disposable;
+            }
+        );
+
+    }
+
+    public function executeStatement($queryString, $parameters = []) {
+        /**
+         * http://git.postgresql.org/gitweb/?p=postgresql.git;a=blob;f=src/interfaces/libpq/fe-exec.c;h=828f18e1110119efc3bf99ecf16d98ce306458ea;hb=6bcce25801c3fcb219e0d92198889ec88c74e2ff#l1381
+         *
+         * Should make this return a Statement object
+         *
+         * To use prepared statements, looks like we need to:
+         * - Parse (if needed?) (P)
+         * - Bind (B)
+         *   - Parameter Stuff
+         * - Describe portal (D)
+         * - Execute (E)
+         * - Sync (S)
+         *
+         * Expect back
+         * - Parse Complete (1)
+         * - Bind Complete (2)
+         * - Row Description (T)
+         * - Row Data (D) 0..n
+         * - Command Complete (C)
+         * - Ready for Query (Z)
+         */
+
+        return new AnonymousObservable(
+            function (ObserverInterface $observer) use ($queryString, $parameters) {
+                $name = "somestatement";
+
+                $close = new Close($name);
+                $this->commandQueue->enqueue($close);
+
+                $prepare = new Parse($name, $queryString);
+                $this->commandQueue->enqueue($prepare);
+
+                $bind = new Bind($parameters, $name);
+                $this->commandQueue->enqueue($bind);
+
+                $describe = new Describe();
+                $this->commandQueue->enqueue($describe);
+
+                $execute = new Execute();
+                $this->commandQueue->enqueue($execute);
+
+                $sync = new Sync();
+                $this->commandQueue->enqueue($sync);
+
+                $disposable = $sync->getSubject()->subscribe($observer);
+
+                $this->processQueue();
+
+                return $disposable;
+            }
+        );
+    }
+
+    /**
+     * Add Column information (from T)
+     *
+     * @param $columns
+     */
+    private function addColumns($columns)
+    {
+        $this->columns     = $columns;
+        $this->columnNames = array_map(function ($column) {
+            return $column->name;
+        }, $this->columns);
+    }
+
+    private function debug($string) {
+        echo "DEBIG: " . $string . "\n";
     }
 }

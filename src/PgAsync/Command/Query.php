@@ -27,4 +27,12 @@ class Query implements CommandInterface
     public function shouldWaitForComplete() {
         return true;
     }
+
+    /**
+     * @return string
+     */
+    public function getQueryString()
+    {
+        return $this->queryString;
+    }
 }

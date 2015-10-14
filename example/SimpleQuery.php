@@ -1,41 +1,14 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 
-
 $loop = \React\EventLoop\Factory::create();
 
 
 $client = new PgAsync\Client('file:/tmp/.s.PGSQL.5432', $loop);
 
-$client->connect([
-    "user"     => "matt",
-    "database" => "matt"
-])->then(function ($client) {
-    echo "Connected to Postgres!\n";
-});
+$insert = $client->query("INSERT INTO channel(name, description) VALUES('Test Name', 'This was inserted using the PgAsync thing')");
 
-// beginnings of prepared statement stuff
-//$client->prepare("SELECT * FROM channel WHERE id = $1", "bla")->subscribe(new \Rx\Observer\CallbackObserver(
-//    function ($x) {
-//
-//    },
-//    function ($e) {
-//
-//    },
-//    function () {
-//
-//    }
-//));
-
-//$loop->addTimer(5, function () use ($client) {
-//    $client->describePreparedStatement('bla')->then(function ($something) {
-//        var_dump($something);
-//    }, function ($err) {
-//        var_dump($err);
-//    });
-//});
-
-$client->query("INSERT INTO channel(name, description) VALUES('Test Name', 'This was inserted using the PgAsync thing')")->subscribe(new \Rx\Observer\CallbackObserver(
+$insert->subscribe(new \Rx\Observer\CallbackObserver(
     function ($row) {
         echo "Row on insert?\n";
         var_dump($row);
@@ -44,11 +17,13 @@ $client->query("INSERT INTO channel(name, description) VALUES('Test Name', 'This
         echo "Failed.\n";
     },
     function () {
-        echo "Complete.\n";
+        echo "INSERT Complete.\n";
     }
 ));
 
-$client->query('SELECT * FROM channel')->subscribe(new \Rx\Observer\CallbackObserver(
+$select = $client->query('SELECT * FROM channel');
+
+$select->subscribe(new \Rx\Observer\CallbackObserver(
     function ($row) {
         var_dump($row);
     },
@@ -56,8 +31,28 @@ $client->query('SELECT * FROM channel')->subscribe(new \Rx\Observer\CallbackObse
         echo "Failed.\n";
     },
     function () {
-        echo "Complete.\n";
+        echo "SELECT complete.\n";
     }
 ));
+
+$timerCount = 0;
+
+$loop->addPeriodicTimer(1, function ($timer) use ($client, $select, &$timerCount) {
+    echo "There are " . $client->getConnectionCount() . " connections. ($timerCount)\n";
+    if ($timerCount < 3) {
+        $select->subscribe(new \Rx\Observer\CallbackObserver(
+            function ($row) {
+                var_dump($row);
+            },
+            function ($e) {
+                echo "Failed.\n";
+            },
+            function () {
+                echo "SELECT complete.\n";
+            }
+        ));
+    }
+    $timerCount++;
+});
 
 $loop->run();

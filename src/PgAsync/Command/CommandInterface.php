@@ -4,12 +4,14 @@
 namespace PgAsync\Command;
 
 
+use Rx\Subject\Subject;
+
 interface CommandInterface {
     public function encodedMessage();
     public function complete();
     public function error();
     public function shouldWaitForComplete();
 
-    /** Subject */
+    /** @return Subject */
     public function getSubject();
 } 
