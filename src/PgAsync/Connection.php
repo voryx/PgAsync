@@ -181,7 +181,8 @@ class Connection
     {
         if ($this->currentMessage) {
             $overflow = $this->currentMessage->parseData($data);
-            $this->debug("onData: " . json_encode($overflow) . "");
+            // json_encode can slow things down here
+            //$this->debug("onData: " . json_encode($overflow) . "");
             if ($overflow === false) {
                 // there was not enough data to complete the message
                 // leave this as the currentParser
@@ -254,6 +255,9 @@ class Connection
     private function handleDataRow(DataRow $dataRow)
     {
         if ($this->queryState === $this::STATE_BUSY && $this->currentCommand instanceof CommandInterface) {
+            if (count($dataRow->getColumnValues()) !== count($this->columnNames)) {
+                throw new \Exception("Expected " . count($this->columnNames) . " data values got " . count($dataRow->getColumnValues()));
+            }
             $row = array_combine($this->columnNames, $dataRow->getColumnValues());
             $this->currentCommand->getSubject()->onNext($row);
         }
