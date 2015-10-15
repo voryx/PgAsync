@@ -87,3 +87,45 @@ Install pgasync:
 - Add more testing
 - Transactions
 - Take over the world
+
+## Keep in mind
+
+This is an asynchronous library. If you begin 3 queries (subscribe to their observable):
+```php
+$client->query("SELECT * FROM table1")->subscribe(...);
+$client->query("SELECT * FROM table2")->subscribe(...);
+$client->query("SELECT * FROM table3")->subscribe(...);
+```
+It will start all of them almost simultaneously (and you will begin receiving rows on
+all 3 before any of them have completed). This can be great if you want to run
+3 queries at the same time, but it you have some queries that need information
+that was modified by other statements, this can cause a race condition:
+```php
+$client->query("INSERT INTO invoices(inv_no, customer_id, amount) VALUES('1234A', 1, 35.75)")->subscribe(...);
+$client->query("SELECT SUM(amount) AS balance FROM invoices WHERE customer_id = 1")->subscribe(...);
+```
+In the above situation, your balance may or may not include the invoice inserted
+on the first line.
+
+You can avoid this by using the Rx concat* operator to only start up the second observable
+after the first has completed:
+```php
+$insert = $client->query("INSERT INTO invoices(inv_no, customer_id, amount) VALUES('1234A', 1, 35.75)");
+$select = $client->query("SELECT SUM(amount) AS balance FROM invoices WHERE customer_id = 1");
+
+$insert
+    ->concat($select)
+    ->subscribe(...);
+```
+## A Note about Rx.PHP
+There has been a lot of work on Rx.PHP that has not been pulled into the main repo.
+To use the concat operator mentioned above, you need to instruct composer to grab
+Rx.PHP from a different fork. To do that, add the following to the composer.json file:
+```json
+  "repositories": [
+    {
+      "type": "git",
+      "url": "git@github.com:davidwdan/Rx.PHP.git"
+    }
+  ]
+```
