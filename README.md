@@ -69,7 +69,7 @@ Install the Rx.PHP dependency (please note that we sometimes are using the david
 ```composer require asm89/rx.php:dev-master```
 
 Install pgasync:
-```composer require voryx/pgadmin:dev-master```
+```composer require voryx/pgasync:dev-master```
 
 * Note that Rx.PHP is under heavy development - you may want to check the forks.
 
@@ -98,7 +98,7 @@ $client->query("SELECT * FROM table3")->subscribe(...);
 ```
 It will start all of them almost simultaneously (and you will begin receiving rows on
 all 3 before any of them have completed). This can be great if you want to run
-3 queries at the same time, but it you have some queries that need information
+3 queries at the same time, but if you have some queries that need information
 that was modified by other statements, this can cause a race condition:
 ```php
 $client->query("INSERT INTO invoices(inv_no, customer_id, amount) VALUES('1234A', 1, 35.75)")->subscribe(...);
