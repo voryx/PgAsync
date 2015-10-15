@@ -26,10 +26,9 @@ trait ParserTrait
                 }
 
                 return "";
-            } else {
-                echo "Soemthing out...\n";
-                return false;
             }
         }
+
+        return false;
     }
 }
