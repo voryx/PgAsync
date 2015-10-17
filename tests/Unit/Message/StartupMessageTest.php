@@ -3,7 +3,7 @@
 
 class StartupMessageTest extends PHPUnit_Framework_TestCase {
     public function test() {
-        $m = new \PgAsync\Message\StartupMessage();
+        $m = new \PgAsync\Command\StartupMessage();
 
         $m->setParameters([
             "user" => "zxcv",

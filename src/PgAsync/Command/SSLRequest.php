@@ -4,6 +4,8 @@
 namespace PgAsync\Command;
 
 
+use PgAsync\Message\Message;
+
 class SSLRequest implements CommandInterface {
     use CommandTrait;
 
@@ -12,4 +14,11 @@ class SSLRequest implements CommandInterface {
 
         return Message::prependLengthInt32($msg);
     }
+
+    public function shouldWaitForComplete()
+    {
+        return false;
+    }
+
+
 } 
