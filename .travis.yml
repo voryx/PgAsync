@@ -1,0 +1,22 @@
+language: php
+
+php:
+  - 5.4
+  - 5.5
+  - 5.6
+  - 7
+  - hhvm
+
+matrix:
+  allow_failures:
+    - php: 7
+    - php: hhvm
+
+addons:
+  postgresql: "9.3"
+
+install;:
+  - composer install
+
+script:
+  - phpunit

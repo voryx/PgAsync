@@ -72,4 +72,16 @@ class Client implements EventEmitterInterface
     public function getConnectionCount() {
         return count($this->connections);
     }
+
+    /**
+     * This is here temporarily so that the tests can disconnect
+     * Will be setup better/more gracefully at some point hopefully
+     *
+     * @deprecated
+     */
+    public function closeNow() {
+        foreach ($this->connections as $connection) {
+            $connection->disconnect();
+        }
+    }
 }

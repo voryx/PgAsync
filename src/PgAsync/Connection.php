@@ -439,4 +439,8 @@ class Connection
     private function debug($string) {
         //echo "DEBIG: " . $string . "\n";
     }
+
+    public function disconnect() {
+        $this->stream->close();
+    }
 }
