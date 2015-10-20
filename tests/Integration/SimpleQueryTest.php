@@ -8,7 +8,7 @@ use Rx\Observer\CallbackObserver;
 class SimpleQueryTest extends TestCase
 {
     public function testSimpleQuery() {
-        $client = new Client(["user" => "matt", "database" => $this::dbName], $this->getLoop());
+        $client = new Client(["user" => $this::getDbUser(), "database" => $this::getDbName()], $this->getLoop());
 
         $count = $client->query("SELECT count(*) AS the_count FROM thing");
 
@@ -64,7 +64,7 @@ class SimpleQueryTest extends TestCase
     }
 
     public function testSimpleQueryError() {
-        $client = new Client(["user" => "matt", "database" => $this::dbName], $this->getLoop());
+        $client = new Client(["user" => $this->getDbUser(), "database" => $this::getDbName()], $this->getLoop());
 
         $count = $client->query("SELECT count(*) abcdef AS the_count FROM thing WHERE thing_type = 'non-thing'");
 
