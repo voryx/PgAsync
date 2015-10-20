@@ -8,6 +8,7 @@ use PgAsync\Command\Describe;
 use PgAsync\Command\Execute;
 use PgAsync\Command\Parse;
 use PgAsync\Command\Sync;
+use PgAsync\Command\Terminate;
 use PgAsync\Message\Authentication;
 use PgAsync\Message\BackendKeyData;
 use PgAsync\Message\CommandComplete;
@@ -441,6 +442,7 @@ class Connection
     }
 
     public function disconnect() {
+        $this->commandQueue->enqueue(new Terminate());
         $this->stream->close();
     }
 }
