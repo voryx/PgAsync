@@ -260,6 +260,21 @@ class Connection
                 throw new \Exception("Expected " . count($this->columnNames) . " data values got " . count($dataRow->getColumnValues()));
             }
             $row = array_combine($this->columnNames, $dataRow->getColumnValues());
+
+            // this should be broken out into a "data-mapper" type thing
+            // where objects can be added to allow formatting data as it is
+            // processed according to the type
+            foreach ($this->columns as $column) {
+                if ($column->typeOid == 16) { // bool
+                    if ($row[$column->name] == "f") {
+                        $row[$column->name] = false;
+                        continue;
+                    }
+
+                    $row[$column->name] = true;
+                }
+            }
+
             $this->currentCommand->getSubject()->onNext($row);
         }
     }
