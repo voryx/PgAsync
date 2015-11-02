@@ -24,6 +24,9 @@ if (getenv("TRAVIS") == "true") {
     \PgAsync\Tests\TestCase::setDbUser("postgres");
 }
 
+// cleanup remnants if there are any
+exec("dropdb " . \PgAsync\Tests\TestCase::getDbName() . " -U '" . \PgAsync\Tests\TestCase::getDbUser() . "'");
+
 // Create the Test database
 exec("psql -c 'create database " . \PgAsync\Tests\TestCase::getDbName() . ";' -U '" . \PgAsync\Tests\TestCase::getDbUser() . "'");
 
