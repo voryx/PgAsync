@@ -266,6 +266,9 @@ class Connection
             // processed according to the type
             foreach ($this->columns as $column) {
                 if ($column->typeOid == 16) { // bool
+                    if ($row[$column->name] === null) {
+                        continue;
+                    }
                     if ($row[$column->name] == "f") {
                         $row[$column->name] = false;
                         continue;
