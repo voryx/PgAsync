@@ -116,6 +116,10 @@ class Connection
             $parameters["port"] = "5432";
         }
 
+        if (array_key_exists('password', $parameters) && $parameters['password'] === null) {
+            unset($parameters['password']);
+        }
+
         $this->parameters = $parameters;
         $this->loop       = $loop;
 
@@ -315,6 +319,11 @@ class Connection
 
     private function handleErrorResponse(ErrorResponse $message)
     {
+        if ($this->connStatus === $this::CONNECTION_MADE) {
+            $this->connStatus = $this::CONNECTION_BAD;
+            // notify any waiting commands
+            $this->processQueue();
+        }
         if ($this->currentCommand !== null) {
             $this->currentCommand->getSubject()->onError(new ErrorException($message));
             $this->currentCommand = null;
@@ -349,6 +358,19 @@ class Connection
 
     public function processQueue()
     {
+        if ($this->commandQueue->count() == 0) {
+            return;
+        }
+
+        if ($this->connStatus === $this::CONNECTION_BAD) {
+            while ($this->commandQueue->count() > 0) {
+                $c = $this->commandQueue->dequeue();
+                if ($c instanceof CommandInterface) {
+                    $c->getSubject()->onError(new Exception("Bad connection"));
+                }
+            }
+        }
+
         while ($this->commandQueue->count() > 0 && $this->queryState === static::STATE_READY) {
             /** @var CommandInterface $c */
             $c = $this->commandQueue->dequeue();
@@ -456,7 +478,7 @@ class Connection
     }
 
     private function debug($string) {
-        //echo "DEBIG: " . $string . "\n";
+        //echo "DEBUG: " . $string . "\n";
     }
 
     public function disconnect() {

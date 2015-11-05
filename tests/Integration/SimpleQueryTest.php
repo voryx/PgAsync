@@ -32,7 +32,7 @@ class SimpleQueryTest extends TestCase
 
         $this->runLoopWithTimeout(2);
 
-        $this->assertEquals(2, $theCount);
+        $this->assertEquals(3, $theCount);
     }
 
     public function testSimpleQueryNoResult() {
