@@ -1,8 +1,6 @@
 <?php
 
-
 namespace PgAsync\Tests\Integration;
-
 
 use PgAsync\Client;
 use Rx\Observer\CallbackObserver;
@@ -10,9 +8,8 @@ use Rx\Observer\CallbackObserver;
 class BoolTest extends TestCase
 {
     public function testBools() {
-        $conn = $this->getLoop();
 
-        $client = new Client(["user" => $this::getDbUser(), "database" => $this::getDbName()], $this->getLoop());
+        $client = new Client(["user" => $this::getDbUser(), "database" => $this::getDbName()]);
 
         $count = $client->query("SELECT * FROM thing");
 

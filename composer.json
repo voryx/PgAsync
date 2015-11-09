@@ -35,6 +35,7 @@
   ],
   "require": {
     "react/socket-client": "0.4.*",
-    "asm89/rx.php": "dev-master"
+    "asm89/rx.php": "dev-master",
+    "voryx/event-loop": "^0.1.1"
   }
 }

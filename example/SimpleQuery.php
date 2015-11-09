@@ -1,15 +1,12 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 
-$loop = \React\EventLoop\Factory::create();
-
-
 $client = new PgAsync\Client([
     "host" => "127.0.0.1",
     "port" => "5432",
     "user"     => "matt",
     "database" => "matt"
-], $loop);
+]);
 
 $insert = $client->query("INSERT INTO channel(name, description) VALUES('Test Name', 'This was inserted using the PgAsync thing')");
 
@@ -42,7 +39,7 @@ $select->subscribe(new \Rx\Observer\CallbackObserver(
 
 $timerCount = 0;
 
-$loop->addPeriodicTimer(1, function ($timer) use ($client, $select, &$timerCount) {
+\EventLoop\addPeriodicTimer(1, function ($timer) use ($client, $select, &$timerCount) {
     echo "There are " . $client->getConnectionCount() . " connections. ($timerCount)\n";
     if ($timerCount < 3) {
         $select->subscribe(new \Rx\Observer\CallbackObserver(
@@ -59,5 +56,3 @@ $loop->addPeriodicTimer(1, function ($timer) use ($client, $select, &$timerCount
     }
     $timerCount++;
 });
-
-$loop->run();

@@ -11,14 +11,13 @@ This is a pure PHP implementation (you don't need Postgres extensions to use it)
 
 ## Example - Simple Query
 ```php
-$loop = \React\EventLoop\Factory::create();
 
 $client = new PgAsync\Client([
     "host" => "127.0.0.1",
     "port" => "5432",
     "user"     => "matt",
     "database" => "matt"
-], $loop);
+]);
 
 $client->query('SELECT * FROM channel')->subscribe(new \Rx\Observer\CallbackObserver(
     function ($row) {
@@ -32,19 +31,20 @@ $client->query('SELECT * FROM channel')->subscribe(new \Rx\Observer\CallbackObse
     }
 ));
 
-$loop->run();
+
 ```
 
 ## Example - parameterized query
 ```php
-$loop = \React\EventLoop\Factory::create();
 
 $client = new PgAsync\Client([
      "host" => "127.0.0.1",
      "port" => "5432",
      "user"     => "matt",
-     "database" => "matt"
-], $loop);
+     "database" => "matt",
+     "auto_disconnect" => true //This option will force the client to disconnect as soon as it completes.  The connection will not be returned to the connection pool.
+
+]);
 
 $client->executeStatement('SELECT * FROM channel WHERE id = $1', ['5'])
     ->subscribe(new \Rx\Observer\CallbackObserver(
@@ -59,7 +59,6 @@ $client->executeStatement('SELECT * FROM channel WHERE id = $1', ['5'])
         }
     ));
 
-$loop->run();
 ```
 
 ## Install
@@ -116,16 +115,4 @@ $select = $client->query("SELECT SUM(amount) AS balance FROM invoices WHERE cust
 $insert
     ->concat($select)
     ->subscribe(...);
-```
-## A Note about Rx.PHP
-There has been a lot of work on Rx.PHP that has not been pulled into the main repo.
-To use the concat operator mentioned above, you need to instruct composer to grab
-Rx.PHP from a different fork. To do that, add the following to the composer.json file:
-```json
-  "repositories": [
-    {
-      "type": "git",
-      "url": "git@github.com:davidwdan/Rx.PHP.git"
-    }
-  ]
 ```

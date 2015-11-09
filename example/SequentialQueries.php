@@ -1,12 +1,10 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 
-$loop = \React\EventLoop\Factory::create();
-
 $client = new \PgAsync\Client([
     "user" => "matt",
     "database" => "matt"
-], $loop);
+]);
 
 $insert = $client->query("INSERT INTO channel(name, description) VALUES('SQ', 'SQ Insert')");
 
@@ -20,5 +18,3 @@ $insert
             echo json_encode($x) . "\n";
         }
     ));
-
-$loop->run();

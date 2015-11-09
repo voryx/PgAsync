@@ -15,7 +15,7 @@ class NullPasswordTest extends TestCase
             "user" => $this::getDbUser(),
             "database" => $this::getDbName(),
             "password" => null
-        ], $this->getLoop());
+        ]);
 
         $count = $client->query("SELECT count(*) AS the_count FROM thing");
 

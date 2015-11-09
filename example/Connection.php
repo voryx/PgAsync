@@ -2,14 +2,12 @@
 
 require_once __DIR__ . '/bootstrap.php';
 
-$loop = \React\EventLoop\Factory::create();
-
 $conn = new \PgAsync\Connection([
     "host" => "127.0.0.1",
     "port" => "5432",
     "user"     => "matt",
     "database" => "matt"
-], $loop);
+]);
 
 $jsonObserverFactory = function () {
     return new \Rx\Observer\CallbackObserver(
@@ -35,5 +33,3 @@ $channelsWithParamQ->subscribe($jsonObserverFactory());
 
 $channels->subscribe($jsonObserverFactory());
 $channelsWithParamQ->subscribe($jsonObserverFactory());
-
-$loop->run();

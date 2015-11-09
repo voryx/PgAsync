@@ -4,6 +4,7 @@
 namespace PgAsync\Tests;
 
 
+use EventLoop\EventLoop;
 use React\EventLoop\Factory;
 use React\EventLoop\LoopInterface;
 use React\EventLoop\Timer\Timer;
@@ -22,7 +23,7 @@ class TestCase extends \PHPUnit_Framework_TestCase
 
     public static function getLoop() {
         if (static::$loop === null) {
-            static::$loop = Factory::create();
+            static::$loop = EventLoop::getLoop();
         }
 
         return static::$loop;

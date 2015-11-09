@@ -96,6 +96,9 @@ class Connection
      */
     private $backendTransactionStatus = "UNKNOWN";
 
+    /** @var  bool */
+    private $auto_disconnect = false;
+
     /**
      * Connection constructor.
      */
@@ -120,8 +123,15 @@ class Connection
             unset($parameters['password']);
         }
 
+        if (isset($parameters['auto_disconnect'])){
+            $this->auto_disconnect = $parameters['auto_disconnect'];
+            $this->auto_disconnect = $parameters['auto_disconnect'];
+            unset($parameters['auto_disconnect']);
+        }
+
         $this->parameters = $parameters;
         $this->loop       = $loop;
+
 
         $this->commandQueue = new \SplQueue();
 
@@ -301,6 +311,9 @@ class Connection
     {
         if ($this->currentCommand instanceof CommandInterface) {
             $this->currentCommand->getSubject()->onCompleted();
+            if ($this->auto_disconnect){
+                $this->disconnect();
+            }
         }
         $this->debug("Command complete.");
     }
@@ -366,7 +379,7 @@ class Connection
             while ($this->commandQueue->count() > 0) {
                 $c = $this->commandQueue->dequeue();
                 if ($c instanceof CommandInterface) {
-                    $c->getSubject()->onError(new Exception("Bad connection"));
+                    $c->getSubject()->onError(new \Exception("Bad connection"));
                 }
             }
         }

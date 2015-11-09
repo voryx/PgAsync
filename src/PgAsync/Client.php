@@ -16,6 +16,7 @@ class Client implements EventEmitterInterface
 
     /** @var  string */
     protected $connectString;
+
     /** @var LoopInterface */
     protected $loop;
 
@@ -28,12 +29,12 @@ class Client implements EventEmitterInterface
 
     /**
      * @param $parameters
-     * @param $loop
+     * @param \React\EventLoop\LoopInterface $loop
      */
-    function __construct($parameters, $loop)
+    function __construct($parameters, LoopInterface $loop = null)
     {
         $this->parameters = $parameters;
-        $this->loop       = $loop;
+        $this->loop       = $loop ?: \EventLoop\getLoop();
     }
 
     public function query($s)
@@ -50,7 +51,8 @@ class Client implements EventEmitterInterface
         return $conn->executeStatement($queryString, $parameters);
     }
 
-    public function getIdleConnection() {
+    public function getIdleConnection()
+    {
         // we want to get the first available one
         // this will keep the connections at the front the busiest
         // and then we can add an idle timer to the connections
@@ -61,15 +63,15 @@ class Client implements EventEmitterInterface
             }
         }
 
-        $connection = new Connection($this->parameters, $this->loop);
-
+        // no idle connections were found - spin up new one
+        $connection          = new Connection($this->parameters, $this->loop);
         $this->connections[] = $connection;
 
-        // no idle connections were found - spin up new one
         return $connection;
     }
 
-    public function getConnectionCount() {
+    public function getConnectionCount()
+    {
         return count($this->connections);
     }
 
@@ -79,7 +81,8 @@ class Client implements EventEmitterInterface
      *
      * @deprecated
      */
-    public function closeNow() {
+    public function closeNow()
+    {
         foreach ($this->connections as $connection) {
             $connection->disconnect();
         }
