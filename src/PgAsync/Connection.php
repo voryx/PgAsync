@@ -7,6 +7,7 @@ use PgAsync\Command\Close;
 use PgAsync\Command\Describe;
 use PgAsync\Command\Execute;
 use PgAsync\Command\Parse;
+use PgAsync\Command\PasswordMessage;
 use PgAsync\Command\Sync;
 use PgAsync\Command\Terminate;
 use PgAsync\Message\Authentication;
@@ -102,6 +103,8 @@ class Connection
     /** @var  bool */
     private $auto_disconnect = false;
 
+    private $password;
+
     /**
      * Connection constructor.
      */
@@ -122,7 +125,8 @@ class Connection
             $parameters["port"] = "5432";
         }
 
-        if (array_key_exists('password', $parameters) && $parameters['password'] === null) {
+        if (array_key_exists('password', $parameters)) {
+            $this->password = $parameters["password"];
             unset($parameters['password']);
         }
 
@@ -301,9 +305,24 @@ class Connection
 
     private function handleAuthentication(Authentication $message)
     {
+        $this->lastError = "Unhandled authentication message: " . $message->getAuthCode();
+        if ($message->getAuthCode() === $message::AUTH_CLEARTEXT_PASSWORD) {
+            if ($this->password === null) {
+                $this->lastError = "Server asked for password, but none was configured.";
+            } else {
+                $passwordMessage = new PasswordMessage($this->password);
+                $this->stream->write($passwordMessage->encodedMessage());
+                return;
+            }
+        }
         if ($message->getAuthCode() === $message::AUTH_OK) {
             $this->connStatus = $this::CONNECTION_AUTH_OK;
+            return;
         }
+
+        $this->connStatus = $this::CONNECTION_BAD;
+        $this->failAllCommandsWith(new \Exception($this->lastError));
+        $this->disconnect();
     }
 
     private function handleBackendKeyData(BackendKeyData $message)
@@ -378,6 +397,15 @@ class Connection
         $this->addColumns($message->getColumns());
     }
 
+    private function failAllCommandsWith(\Exception $e) {
+        while ($this->commandQueue->count() > 0) {
+            $c = $this->commandQueue->dequeue();
+            if ($c instanceof CommandInterface) {
+                $c->getSubject()->onError($e);
+            }
+        }
+    }
+
     public function processQueue()
     {
         if ($this->commandQueue->count() == 0) {
@@ -385,12 +413,7 @@ class Connection
         }
 
         if ($this->connStatus === $this::CONNECTION_BAD) {
-            while ($this->commandQueue->count() > 0) {
-                $c = $this->commandQueue->dequeue();
-                if ($c instanceof CommandInterface) {
-                    $c->getSubject()->onError(new \Exception("Bad connection: " . $this->lastError));
-                }
-            }
+            $this->failAllCommandsWith(new \Exception("Bad connection: " . $this->lastError));
         }
 
         while ($this->commandQueue->count() > 0 && $this->queryState === static::STATE_READY) {
