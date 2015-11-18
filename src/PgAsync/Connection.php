@@ -88,6 +88,9 @@ class Connection
     /** @var array */
     private $columnNames = [];
 
+    /** @var string */
+    private $lastError;
+
     /**
      * Can be 'I' for Idle, 'T' if in transactions block
      * or 'E' if in failed transaction block (queries will fail until end of trans)
@@ -332,6 +335,12 @@ class Connection
 
     private function handleErrorResponse(ErrorResponse $message)
     {
+        $this->lastError = $message;
+        if ($message->getSeverity() == "FATAL") {
+            $this->connStatus = $this::CONNECTION_BAD;
+            // notify any waiting commands
+            $this->processQueue();
+        }
         if ($this->connStatus === $this::CONNECTION_MADE) {
             $this->connStatus = $this::CONNECTION_BAD;
             // notify any waiting commands
@@ -379,7 +388,7 @@ class Connection
             while ($this->commandQueue->count() > 0) {
                 $c = $this->commandQueue->dequeue();
                 if ($c instanceof CommandInterface) {
-                    $c->getSubject()->onError(new \Exception("Bad connection"));
+                    $c->getSubject()->onError(new \Exception("Bad connection: " . $this->lastError));
                 }
             }
         }

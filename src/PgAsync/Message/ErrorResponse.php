@@ -63,4 +63,37 @@ class ErrorResponse implements ParserInterface
     {
         return $this->errorMessages;
     }
+
+    /**
+     * @return string|null
+     */
+    public function getSeverity() {
+        $severity = $this->getErrorMessagesOfType('S');
+
+        return count($severity) > 0 ? array_pop($severity) : null;
+    }
+
+    public function getMessage() {
+        $message = $this->getErrorMessagesOfType('M');
+
+        return count($message) > 0 ? array_pop($message) : null;
+    }
+
+    private function getErrorMessagesOfType($type) {
+        return array_map(function ($x) {
+            return $x['message'];
+        }, array_filter($this->getErrorMessages(), function ($x) use ($type) {
+            return $x['type'] == $type;
+        }));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    function __toString()
+    {
+        return $this->getSeverity() . ": " . $this->getMessage();
+    }
+
+
 }

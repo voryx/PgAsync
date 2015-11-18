@@ -8,25 +8,17 @@ use PgAsync\Message\ErrorResponse;
 
 class ErrorException extends \Exception
 {
+    /** @var ErrorResponse */
     private $errorResponse;
 
     /**
      * ErrorException constructor.
+     *
+     * @param ErrorResponse $errorResponse
      */
     public function __construct(ErrorResponse $errorResponse)
     {
         $this->errorResponse = $errorResponse;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function __toString()
-    {
-        $errStrings = array_map(function ($err) {
-            return $err["type"] . ": " . $err["message"];
-        }, $this->errorResponse->getErrorMessages());
-
-        return implode(". ", $errStrings);
+        $this->message = $this->errorResponse->__toString();
     }
 }
