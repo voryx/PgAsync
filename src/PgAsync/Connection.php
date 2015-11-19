@@ -306,11 +306,19 @@ class Connection
     private function handleAuthentication(Authentication $message)
     {
         $this->lastError = "Unhandled authentication message: " . $message->getAuthCode();
-        if ($message->getAuthCode() === $message::AUTH_CLEARTEXT_PASSWORD) {
+        if ($message->getAuthCode() === $message::AUTH_CLEARTEXT_PASSWORD ||
+            $message->getAuthCode() === $message::AUTH_MD5_PASSWORD
+        ) {
             if ($this->password === null) {
                 $this->lastError = "Server asked for password, but none was configured.";
             } else {
-                $passwordMessage = new PasswordMessage($this->password);
+                $passwordToSend = $this->password;
+                if ($message->getAuthCode() === $message::AUTH_MD5_PASSWORD) {
+                    $salt = $message->getSalt();
+                    $passwordToSend = 'md5' .
+                        md5(md5($this->password . $this->parameters['user']) . $salt);
+                }
+                $passwordMessage = new PasswordMessage($passwordToSend);
                 $this->stream->write($passwordMessage->encodedMessage());
                 return;
             }

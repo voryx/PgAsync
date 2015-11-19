@@ -17,6 +17,8 @@ class Authentication extends Message
 
     private $authCode;
 
+    private $salt;
+
     /**
      * @inheritDoc
      */
@@ -27,7 +29,14 @@ class Authentication extends Message
             case $this::AUTH_OK: break; // AuthenticationOk
             case $this::AUTH_KERBEROS_V_5: break; // AuthenticationKerberosV5
             case $this::AUTH_CLEARTEXT_PASSWORD: break; // AuthenticationCleartextPassword
-            case $this::AUTH_MD5_PASSWORD: break; // AuthenticationMD5Password
+            case $this::AUTH_MD5_PASSWORD:
+                if (strlen($rawMessage) != 13) {
+                    throw new \InvalidArgumentException("Invalid raw message length for MD5 authentication message.");
+                }
+
+                $this->salt = substr($rawMessage,9, 4);
+
+                break; // AuthenticationMD5Password
             case $this::AUTH_SCM_CREDENTIAL: break; // AuthenticationSCMCredential
             case $this::AUTH_GSS: break; // AuthenticationGSS
             case $this::AUTH_GSS_CONTINUE: break; // AuthenticationGSSContinue
@@ -51,5 +60,13 @@ class Authentication extends Message
     public function getAuthCode()
     {
         return $this->authCode;
+    }
+
+    public function getSalt() {
+        if ($this->getAuthCode() !== $this::AUTH_MD5_PASSWORD) {
+            throw new \Exception("getSalt called on non-md5 authentication message");
+        }
+
+        return $this->salt;
     }
 }
