@@ -374,7 +374,17 @@ class Connection
             $this->processQueue();
         }
         if ($this->currentCommand !== null) {
-            $this->currentCommand->getSubject()->onError(new ErrorException($message));
+            $extraInfo = null;
+            if ($this->currentCommand instanceof Sync) {
+                $extraInfo = [
+                    "query_string" => $this->currentCommand->getDescription()
+                ];
+            } elseif ($this->currentCommand instanceof Query) {
+                $extraInfo = [
+                    "query_string" => $this->currentCommand->getQueryString()
+                ];
+            }
+            $this->currentCommand->getSubject()->onError(new ErrorException($message, $extraInfo));
             $this->currentCommand = null;
         }
     }
@@ -505,7 +515,7 @@ class Connection
                 $execute = new Execute();
                 $this->commandQueue->enqueue($execute);
 
-                $sync = new Sync();
+                $sync = new Sync($queryString);
                 $this->commandQueue->enqueue($sync);
 
                 $disposable = $sync->getSubject()->subscribe($observer);

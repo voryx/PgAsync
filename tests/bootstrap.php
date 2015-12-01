@@ -25,7 +25,7 @@ if (getenv("TRAVIS") == "true") {
 }
 
 // cleanup remnants if there are any
-exec("dropdb " . \PgAsync\Tests\TestCase::getDbName() . " -U '" . \PgAsync\Tests\TestCase::getDbUser() . "'");
+exec("dropdb --if-exists " . \PgAsync\Tests\TestCase::getDbName() . " -U '" . \PgAsync\Tests\TestCase::getDbUser() . "'");
 
 // Create the Test database
 exec("psql -c 'create database " . \PgAsync\Tests\TestCase::getDbName() . ";' -U '" . \PgAsync\Tests\TestCase::getDbUser() . "'");
@@ -33,5 +33,5 @@ exec("psql -c 'create database " . \PgAsync\Tests\TestCase::getDbName() . ";' -U
 exec("psql -f " . __DIR__ . "/test_db.sql " . \PgAsync\Tests\TestCase::getDbName() . " " . \PgAsync\Tests\TestCase::getDbUser());
 
 register_shutdown_function(function () {
-    exec("dropdb " . \PgAsync\Tests\TestCase::getDbName() . " -U '" . \PgAsync\Tests\TestCase::getDbUser() . "'");
+    exec("dropdb --if-exists " . \PgAsync\Tests\TestCase::getDbName() . " -U '" . \PgAsync\Tests\TestCase::getDbUser() . "'");
 });

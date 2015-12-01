@@ -8,12 +8,15 @@ class Sync implements CommandInterface
 {
     use CommandTrait;
 
+    private $description;
 
     /**
      * Sync constructor.
+     * @param string $description
      */
-    public function __construct()
+    public function __construct($description = "")
     {
+        $this->description = $description;
         $this->getSubject();
     }
 
@@ -24,5 +27,13 @@ class Sync implements CommandInterface
 
     public function shouldWaitForComplete() {
         return true;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDescription()
+    {
+        return $this->description;
     }
 }
