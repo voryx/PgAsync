@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/voryx/PgAsync.svg?branch=master)](https://travis-ci.org/voryx/PgAsyncy)
 # PgAsync
 Asynchronous Reactive Postgres Library for PHP (Non-blocking)
 
