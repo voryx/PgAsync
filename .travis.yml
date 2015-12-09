@@ -16,7 +16,7 @@ matrix:
 addons:
   postgresql: "9.3"
 
-install;:
+install:
   - composer install
 
 script:
