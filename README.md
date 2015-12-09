@@ -1,4 +1,4 @@
-# ReactivePostgres
+# PgAsync
 Asynchronous Reactive Postgres Library for PHP (Non-blocking)
 
 ## What it is
