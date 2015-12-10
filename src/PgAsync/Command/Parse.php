@@ -1,6 +1,5 @@
 <?php
 
-
 namespace PgAsync\Command;
 
 use PgAsync\Message\Message;
@@ -20,11 +19,11 @@ class Parse implements CommandInterface
      */
     public $queryString;
 
-    function __construct($name, $queryString)
+    public function __construct($name, $queryString)
     {
         $this->name        = $name;
         $this->queryString = $queryString;
-        $this->subject    = new Subject();
+        $this->subject     = new Subject();
     }
 
     // there is mechanisms to pre-describe types - we aren't getting into that
@@ -39,7 +38,8 @@ class Parse implements CommandInterface
         );
     }
 
-    public function shouldWaitForComplete() {
+    public function shouldWaitForComplete()
+    {
         return false;
     }
 }

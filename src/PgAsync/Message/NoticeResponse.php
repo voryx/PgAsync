@@ -1,8 +1,6 @@
 <?php
 
-
 namespace PgAsync\Message;
-
 
 class NoticeResponse implements ParserInterface
 {
@@ -27,7 +25,7 @@ class NoticeResponse implements ParserInterface
             $msg = substr($part, 1);
 
             $this->noticeMessages[] = [
-                "type" => $fieldType,
+                "type"    => $fieldType,
                 "message" => $msg
             ];
         }
@@ -36,7 +34,7 @@ class NoticeResponse implements ParserInterface
     /**
      * @inheritDoc
      */
-    static public function getMessageIdentifier()
+    public static function getMessageIdentifier()
     {
         return 'N';
     }

@@ -1,12 +1,11 @@
 <?php
 
-
 namespace PgAsync\Command;
-
 
 use PgAsync\Message\Message;
 
-class StartupMessage implements CommandInterface {
+class StartupMessage implements CommandInterface
+{
     use CommandTrait;
 
     /**
@@ -46,7 +45,8 @@ class StartupMessage implements CommandInterface {
         $this->parameters = $parameters;
     }
 
-    public function encodedMessage() {
+    public function encodedMessage()
+    {
         $msg = "";
 
         $msg .= Message::int32($this->protocolVersion);

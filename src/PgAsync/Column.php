@@ -1,10 +1,9 @@
 <?php
 
-
 namespace PgAsync;
 
-
-class Column {
+class Column
+{
     public $name;
     public $tableOid;
     public $attrNo;
@@ -12,4 +11,4 @@ class Column {
     public $dataSize;
     public $typeModifier;
     public $formatCode;
-} 
+}

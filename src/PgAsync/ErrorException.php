@@ -1,8 +1,6 @@
 <?php
 
-
 namespace PgAsync;
-
 
 use PgAsync\Message\ErrorResponse;
 
@@ -22,8 +20,8 @@ class ErrorException extends \Exception
     public function __construct(ErrorResponse $errorResponse, $extraInfo = null)
     {
         $this->errorResponse = $errorResponse;
-        $this->message = $this->errorResponse->__toString();
-        $this->extraInfo = $extraInfo;
+        $this->message       = $this->errorResponse->__toString();
+        $this->extraInfo     = $extraInfo;
 
         if (is_array($extraInfo) && isset($extraInfo['query_string'])) {
             $this->message .= " while executing \"" . $extraInfo['query_string'] . "\"";

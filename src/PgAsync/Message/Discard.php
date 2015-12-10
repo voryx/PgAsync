@@ -1,8 +1,6 @@
 <?php
 
-
 namespace PgAsync\Message;
-
 
 /**
  * Swallows messages - used if we don't know what it is or it is not implemented yet
@@ -24,7 +22,7 @@ class Discard implements ParserInterface
     /**
      * @inheritDoc
      */
-    static public function getMessageIdentifier()
+    public static function getMessageIdentifier()
     {
         return '_';
     }

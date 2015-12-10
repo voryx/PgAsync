@@ -31,7 +31,7 @@ class Client implements EventEmitterInterface
      * @param $parameters
      * @param \React\EventLoop\LoopInterface $loop
      */
-    function __construct($parameters, LoopInterface $loop = null)
+    public function __construct($parameters, LoopInterface $loop = null)
     {
         $this->parameters = $parameters;
         $this->loop       = $loop ?: \EventLoop\getLoop();

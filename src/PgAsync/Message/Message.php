@@ -1,27 +1,30 @@
 <?php
 
-
 namespace PgAsync\Message;
 
-
-abstract class Message implements ParserInterface {
+abstract class Message implements ParserInterface
+{
     use ParserTrait;
 
-    static public function int16($i) {
+    public static function int16($i)
+    {
         return pack("n", $i);
     }
 
-    static public function int32($i) {
+    public static function int32($i)
+    {
         return pack("N", $i);
     }
 
-    static public function prependLengthInt32($s) {
+    public static function prependLengthInt32($s)
+    {
         $len = strlen($s);
 
         return Message::int32($len + 4) . $s;
     }
 
-    static public function createMessageFromIdentifier($identifier) {
+    public static function createMessageFromIdentifier($identifier)
+    {
         switch ($identifier) {
             case 'R':
                 return new Authentication();
@@ -53,4 +56,4 @@ abstract class Message implements ParserInterface {
 
         return new Discard();
     }
-} 
+}

@@ -1,8 +1,6 @@
 <?php
 
-
 namespace PgAsync\Command;
-
 
 use PgAsync\Message\Message;
 
@@ -27,7 +25,8 @@ class Execute implements CommandInterface
             . Message::int32(0)); // max rows - 0 is unlimited;
     }
 
-    public function shouldWaitForComplete() {
+    public function shouldWaitForComplete()
+    {
         return false;
     }
 }

@@ -1,6 +1,5 @@
 <?php
 
-
 namespace PgAsync\Message;
 
 interface ParserInterface
@@ -28,5 +27,5 @@ interface ParserInterface
      *
      * @return mixed
      */
-    static public function getMessageIdentifier();
+    public static function getMessageIdentifier();
 }

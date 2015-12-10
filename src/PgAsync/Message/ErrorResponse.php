@@ -1,8 +1,6 @@
 <?php
 
-
 namespace PgAsync\Message;
-
 
 class ErrorResponse implements ParserInterface
 {
@@ -42,7 +40,7 @@ class ErrorResponse implements ParserInterface
             $msg = substr($part, 1);
 
             $this->errorMessages[] = [
-                "type" => $fieldType,
+                "type"    => $fieldType,
                 "message" => $msg
             ];
         }
@@ -51,7 +49,7 @@ class ErrorResponse implements ParserInterface
     /**
      * @inheritDoc
      */
-    static public function getMessageIdentifier()
+    public static function getMessageIdentifier()
     {
         return 'E';
     }
@@ -67,19 +65,22 @@ class ErrorResponse implements ParserInterface
     /**
      * @return string|null
      */
-    public function getSeverity() {
+    public function getSeverity()
+    {
         $severity = $this->getErrorMessagesOfType('S');
 
         return count($severity) > 0 ? array_pop($severity) : null;
     }
 
-    public function getMessage() {
+    public function getMessage()
+    {
         $message = $this->getErrorMessagesOfType('M');
 
         return count($message) > 0 ? array_pop($message) : null;
     }
 
-    private function getErrorMessagesOfType($type) {
+    private function getErrorMessagesOfType($type)
+    {
         return array_map(function ($x) {
             return $x['message'];
         }, array_filter($this->getErrorMessages(), function ($x) use ($type) {
@@ -90,10 +91,8 @@ class ErrorResponse implements ParserInterface
     /**
      * @inheritDoc
      */
-    function __toString()
+    public function __toString()
     {
         return $this->getSeverity() . ": " . $this->getMessage();
     }
-
-
 }

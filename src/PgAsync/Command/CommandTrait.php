@@ -1,19 +1,21 @@
 <?php
 
-
 namespace PgAsync\Command;
 
 use Rx\Subject\Subject;
 
-trait CommandTrait {
+trait CommandTrait
+{
     /** @var Subject */
     private $subject;
 
-    public function complete() {
+    public function complete()
+    {
         $this->getSubject()->onCompleted();
     }
 
-    public function error(\Exception $exception = null) {
+    public function error(\Exception $exception = null)
+    {
         if (!($exception instanceof \Exception)) {
             $exception = new \Exception("Unknown Error");
         }

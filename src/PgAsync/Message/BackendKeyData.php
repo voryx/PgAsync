@@ -1,8 +1,6 @@
 <?php
 
-
 namespace PgAsync\Message;
-
 
 class BackendKeyData extends Message
 {
@@ -17,10 +15,8 @@ class BackendKeyData extends Message
     /**
      * @inheritDoc
      */
-    static public function getMessageIdentifier()
+    public static function getMessageIdentifier()
     {
         return 'K';
     }
-
-
 }

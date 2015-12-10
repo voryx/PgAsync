@@ -1,8 +1,6 @@
 <?php
 
-
 namespace PgAsync\Command;
-
 
 class Terminate implements CommandInterface
 {
@@ -21,7 +19,8 @@ class Terminate implements CommandInterface
         return "X\0\0\0\x04";
     }
 
-    public function shouldWaitForComplete() {
+    public function shouldWaitForComplete()
+    {
         return false;
     }
 }

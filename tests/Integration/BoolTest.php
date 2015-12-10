@@ -7,16 +7,17 @@ use Rx\Observer\CallbackObserver;
 
 class BoolTest extends TestCase
 {
-    public function testBools() {
+    public function testBools()
+    {
 
         $client = new Client(["user" => $this::getDbUser(), "database" => $this::getDbName()]);
 
         $count = $client->query("SELECT * FROM thing");
 
-        $trueCount = 0;
+        $trueCount  = 0;
         $falseCount = 0;
-        $nullCount = 0;
-        $completes = false;
+        $nullCount  = 0;
+        $completes  = false;
         $count->subscribe(new CallbackObserver(
             function ($x) use (&$trueCount, &$falseCount, &$nullCount) {
                 if ($x['thing_in_stock'] === true) {
@@ -50,5 +51,4 @@ class BoolTest extends TestCase
         $this->assertEquals(1, $falseCount);
         $this->assertEquals(1, $nullCount);
     }
-
 }

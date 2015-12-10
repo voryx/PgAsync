@@ -1,8 +1,6 @@
 <?php
 
-
 namespace PgAsync\Message;
-
 
 use PgAsync\Column;
 
@@ -23,8 +21,8 @@ class RowDescription implements ParserInterface
             throw new \UnderflowException;
         }
 
-        $columnCount = unpack("n", substr($rawMessage, 5, 2))[1];
-        $columnStart = 7;
+        $columnCount   = unpack("n", substr($rawMessage, 5, 2))[1];
+        $columnStart   = 7;
         $this->columns = [];
         for ($i = 0; $i < $columnCount; $i++) {
             $column = new Column();
@@ -48,15 +46,15 @@ class RowDescription implements ParserInterface
             $pos += 4;
             $column->formatCode = unpack("n", substr($rawMessage, $pos, 2))[1];
             $pos += 2;
-            $this->columns[]   = $column;
-            $columnStart = $pos;
+            $this->columns[] = $column;
+            $columnStart     = $pos;
         }
     }
 
     /**
      * @inheritDoc
      */
-    static public function getMessageIdentifier()
+    public static function getMessageIdentifier()
     {
         return 'T';
     }

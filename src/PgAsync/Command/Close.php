@@ -1,6 +1,5 @@
 <?php
 
-
 namespace PgAsync\Command;
 
 use PgAsync\Message\Message;
@@ -24,7 +23,8 @@ class Close implements CommandInterface
         return "C" . Message::prependLengthInt32("S" . $this->statementName . "\0");
     }
 
-    public function shouldWaitForComplete() {
+    public function shouldWaitForComplete()
+    {
         return false;
     }
 }

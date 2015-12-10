@@ -1,18 +1,16 @@
 <?php
 
-
 namespace PgAsync\Tests\Integration;
 
-
 use PgAsync\Client;
-use PgAsync\Connection;
 use Rx\Observer\CallbackObserver;
 
 class NullPasswordTest extends TestCase
 {
-    public function testNullPassword() {
+    public function testNullPassword()
+    {
         $client = new Client([
-            "user" => $this::getDbUser(),
+            "user"     => $this::getDbUser(),
             "database" => $this::getDbName(),
             "password" => null
         ]);

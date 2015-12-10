@@ -1,8 +1,6 @@
 <?php
 
-
 namespace PgAsync\Tests;
-
 
 use EventLoop\EventLoop;
 use React\EventLoop\Factory;
@@ -11,17 +9,18 @@ use React\EventLoop\Timer\Timer;
 
 class TestCase extends \PHPUnit_Framework_TestCase
 {
-    const dbName = "pgasync_test";
+    const DBNAME = "pgasync_test";
 
     /** @var LoopInterface */
-    static $loop;
+    public static $loop;
 
     /** @var Timer */
-    static $timeoutTimer;
+    public static $timeoutTimer;
 
-    static $dbUser = "";
+    public static $dbUser = "";
 
-    public static function getLoop() {
+    public static function getLoop()
+    {
         if (static::$loop === null) {
             static::$loop = EventLoop::getLoop();
         }
@@ -29,19 +28,22 @@ class TestCase extends \PHPUnit_Framework_TestCase
         return static::$loop;
     }
 
-    public static function stopLoop() {
+    public static function stopLoop()
+    {
 
         static::getLoop()->stop();
     }
 
-    public static function cancelCurrentTimeoutTimer() {
+    public static function cancelCurrentTimeoutTimer()
+    {
         if (static::$timeoutTimer !== null) {
             static::$timeoutTimer->cancel();
             static::$timeoutTimer = null;
         }
     }
 
-    public static function runLoopWithTimeout($seconds) {
+    public static function runLoopWithTimeout($seconds)
+    {
         $loop = static::getLoop();
 
         static::cancelCurrentTimeoutTimer();
@@ -74,7 +76,8 @@ class TestCase extends \PHPUnit_Framework_TestCase
         self::$dbUser = $dbUser;
     }
 
-    public static function getDbName() {
-        return self::dbName;
+    public static function getDbName()
+    {
+        return self::DBNAME;
     }
 }

@@ -131,21 +131,18 @@ class Connection
             unset($parameters['password']);
         }
 
-        if (isset($parameters['auto_disconnect'])){
+        if (isset($parameters['auto_disconnect'])) {
             $this->auto_disconnect = $parameters['auto_disconnect'];
             $this->auto_disconnect = $parameters['auto_disconnect'];
             unset($parameters['auto_disconnect']);
         }
 
-        $this->parameters = $parameters;
-        $this->loop       = $loop;
-
-
+        $this->parameters   = $parameters;
+        $this->loop         = $loop;
         $this->commandQueue = new \SplQueue();
-
-        $this->queryState = static::STATE_BUSY;
-        $this->queryType  = static::QUERY_SIMPLE;
-        $this->connStatus = static::CONNECTION_NEEDED;
+        $this->queryState   = static::STATE_BUSY;
+        $this->queryType    = static::QUERY_SIMPLE;
+        $this->connStatus   = static::CONNECTION_NEEDED;
 
         $this->start();
     }
@@ -170,15 +167,13 @@ class Connection
 
         $this->socket->create($this->parameters["host"], $this->parameters["port"])->then(
             function (Stream $stream) {
-                $this->stream = $stream;
-
+                $this->stream     = $stream;
                 $this->connStatus = static::CONNECTION_MADE;
-
 
                 $stream->on('data', [$this, 'onData']);
 
-//            $ssl = new SSLRequest();
-//            $stream->write($ssl->encodedMessage());
+                //  $ssl = new SSLRequest();
+                //  $stream->write($ssl->encodedMessage());
 
                 $startupParameters = $this->parameters;
                 unset($startupParameters["host"]);
@@ -196,7 +191,8 @@ class Connection
         );
     }
 
-    public function getState() {
+    public function getState()
+    {
         return $this->queryState;
     }
 
@@ -315,17 +311,19 @@ class Connection
             } else {
                 $passwordToSend = $this->password;
                 if ($message->getAuthCode() === $message::AUTH_MD5_PASSWORD) {
-                    $salt = $message->getSalt();
+                    $salt           = $message->getSalt();
                     $passwordToSend = 'md5' .
                         md5(md5($this->password . $this->parameters['user']) . $salt);
                 }
                 $passwordMessage = new PasswordMessage($passwordToSend);
                 $this->stream->write($passwordMessage->encodedMessage());
+
                 return;
             }
         }
         if ($message->getAuthCode() === $message::AUTH_OK) {
             $this->connStatus = $this::CONNECTION_AUTH_OK;
+
             return;
         }
 
@@ -342,7 +340,7 @@ class Connection
     {
         if ($this->currentCommand instanceof CommandInterface) {
             $this->currentCommand->getSubject()->onCompleted();
-            if ($this->auto_disconnect){
+            if ($this->auto_disconnect) {
                 $this->disconnect();
             }
         }
@@ -405,8 +403,8 @@ class Connection
 
     private function handleReadyForQuery(ReadyForQuery $message)
     {
-        $this->connStatus = $this::CONNECTION_OK;
-        $this->queryState = $this::STATE_READY;
+        $this->connStatus     = $this::CONNECTION_OK;
+        $this->queryState     = $this::STATE_READY;
         $this->currentCommand = null;
         $this->processQueue();
     }
@@ -416,7 +414,8 @@ class Connection
         $this->addColumns($message->getColumns());
     }
 
-    private function failAllCommandsWith(\Exception $e) {
+    private function failAllCommandsWith(\Exception $e)
+    {
         while ($this->commandQueue->count() > 0) {
             $c = $this->commandQueue->dequeue();
             if ($c instanceof CommandInterface) {
@@ -452,6 +451,7 @@ class Connection
                 }
 
                 $this->currentCommand = $c;
+
                 return;
             }
         }
@@ -474,7 +474,8 @@ class Connection
 
     }
 
-    public function executeStatement($queryString, $parameters = []) {
+    public function executeStatement($queryString, $parameters = [])
+    {
         /**
          * http://git.postgresql.org/gitweb/?p=postgresql.git;a=blob;f=src/interfaces/libpq/fe-exec.c;h=828f18e1110119efc3bf99ecf16d98ce306458ea;hb=6bcce25801c3fcb219e0d92198889ec88c74e2ff#l1381
          *
@@ -541,11 +542,13 @@ class Connection
         }, $this->columns);
     }
 
-    private function debug($string) {
+    private function debug($string)
+    {
         //echo "DEBUG: " . $string . "\n";
     }
 
-    public function disconnect() {
+    public function disconnect()
+    {
         $this->commandQueue->enqueue(new Terminate());
         $this->stream->close();
     }

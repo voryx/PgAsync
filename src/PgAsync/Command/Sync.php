@@ -1,8 +1,6 @@
 <?php
 
-
 namespace PgAsync\Command;
-
 
 class Sync implements CommandInterface
 {
@@ -25,7 +23,8 @@ class Sync implements CommandInterface
         return "S\0\0\0\x04";
     }
 
-    public function shouldWaitForComplete() {
+    public function shouldWaitForComplete()
+    {
         return true;
     }
 

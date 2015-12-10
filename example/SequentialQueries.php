@@ -2,7 +2,7 @@
 require_once __DIR__ . '/bootstrap.php';
 
 $client = new \PgAsync\Client([
-    "user" => "matt",
+    "user"     => "matt",
     "database" => "matt"
 ]);
 

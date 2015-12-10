@@ -1,8 +1,6 @@
 <?php
 
-
 namespace PgAsync\Message;
-
 
 class CommandComplete implements ParserInterface
 {
@@ -44,7 +42,7 @@ class CommandComplete implements ParserInterface
     /**
      * @inheritDoc
      */
-    static public function getMessageIdentifier()
+    public static function getMessageIdentifier()
     {
         return 'C';
     }

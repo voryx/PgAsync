@@ -1,8 +1,6 @@
 <?php
 
-
 namespace PgAsync\Message;
-
 
 class CopyOutResponse implements ParserInterface
 {
@@ -19,7 +17,7 @@ class CopyOutResponse implements ParserInterface
     /**
      * @inheritDoc
      */
-    static public function getMessageIdentifier()
+    public static function getMessageIdentifier()
     {
         return 'H';
     }

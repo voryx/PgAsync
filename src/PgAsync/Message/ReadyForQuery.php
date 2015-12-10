@@ -1,8 +1,6 @@
 <?php
 
-
 namespace PgAsync\Message;
-
 
 class ReadyForQuery implements ParserInterface
 {
@@ -28,7 +26,7 @@ class ReadyForQuery implements ParserInterface
     /**
      * @inheritDoc
      */
-    static public function getMessageIdentifier()
+    public static function getMessageIdentifier()
     {
         return 'Z';
     }

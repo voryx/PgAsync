@@ -1,12 +1,11 @@
 <?php
 
-
 namespace PgAsync\Command;
-
 
 use PgAsync\Message\Message;
 
-class Bind implements CommandInterface {
+class Bind implements CommandInterface
+{
     use CommandTrait;
 
     private $portalName = "";
@@ -24,7 +23,6 @@ class Bind implements CommandInterface {
         $this->params        = $params;
         $this->statementName = $statementName;
     }
-
 
     public function encodedMessage()
     {
@@ -55,10 +53,11 @@ class Bind implements CommandInterface {
         // result column format codes - we aren't using these right now
         $message .= Message::int16(0);
 
-        return 'B'.Message::prependLengthInt32($message);
+        return 'B' . Message::prependLengthInt32($message);
     }
 
-    public function shouldWaitForComplete() {
+    public function shouldWaitForComplete()
+    {
         return false;
     }
 }
