@@ -32,6 +32,7 @@ use React\SocketClient\Connector;
 use React\Stream\Stream;
 use Rx\Observable\AnonymousObservable;
 use Rx\ObserverInterface;
+use Rx\SchedulerInterface;
 
 class Connection
 {
@@ -459,11 +460,11 @@ class Connection
     public function query($query)
     {
         return new AnonymousObservable(
-            function ($observer) use ($query) {
+            function (ObserverInterface $observer, SchedulerInterface $scheduler = null) use ($query) {
                 $q = new Query($query);
                 $this->commandQueue->enqueue($q);
 
-                $disposable = $q->getSubject()->subscribe($observer);
+                $disposable = $q->getSubject()->subscribe($observer, $scheduler);
 
                 $this->processQueue();
 
@@ -497,7 +498,7 @@ class Connection
          */
 
         return new AnonymousObservable(
-            function (ObserverInterface $observer) use ($queryString, $parameters) {
+            function (ObserverInterface $observer, SchedulerInterface $scheduler = null) use ($queryString, $parameters) {
                 $name = "somestatement";
 
                 $close = new Close($name);
@@ -518,7 +519,7 @@ class Connection
                 $sync = new Sync($queryString);
                 $this->commandQueue->enqueue($sync);
 
-                $disposable = $sync->getSubject()->subscribe($observer);
+                $disposable = $sync->getSubject()->subscribe($observer, $scheduler);
 
                 $this->processQueue();
 
