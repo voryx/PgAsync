@@ -65,7 +65,7 @@ $client->executeStatement('SELECT * FROM channel WHERE id = $1', ['5'])
 ## Install
 With [composer](https://getcomposer.org/) install into you project with:
 
-Install the Rx.PHP dependency (please note that we sometimes are using the davidwdan fork for development):
+Install the Rx.PHP dependency (please note that we sometimes are using the voryx fork for development):
 ```composer require asm89/rx.php:dev-master```
 
 Install pgasync:

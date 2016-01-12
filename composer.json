@@ -30,7 +30,7 @@
   "repositories": [
     {
       "type": "git",
-      "url": "git@github.com:davidwdan/Rx.PHP.git"
+      "url": "https://github.com/voryx/Rx.PHP.git"
     }
   ],
   "require": {
