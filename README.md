@@ -65,13 +65,8 @@ $client->executeStatement('SELECT * FROM channel WHERE id = $1', ['5'])
 ## Install
 With [composer](https://getcomposer.org/) install into you project with:
 
-Install the Rx.PHP dependency (please note that we sometimes are using the voryx fork for development):
-```composer require asm89/rx.php:dev-master```
-
 Install pgasync:
 ```composer require voryx/pgasync:dev-master```
-
-* Note that Rx.PHP is under heavy development - you may want to check the forks.
 
 ## What it can do
 - Run queries (CREATE, UPDATE, INSERT, SELECT, DELETE)

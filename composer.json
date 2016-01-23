@@ -27,15 +27,9 @@
       "PgAsync\\": "src/PgAsync/"
     }
   },
-  "repositories": [
-    {
-      "type": "git",
-      "url": "https://github.com/voryx/Rx.PHP.git"
-    }
-  ],
   "require": {
     "react/socket-client": "0.4.*",
-    "asm89/rx.php": "dev-master",
+    "reactivex/rxphp": "^1.0.0",
     "voryx/event-loop": "^0.1.1"
   }
 }
