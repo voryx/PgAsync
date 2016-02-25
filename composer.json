@@ -30,6 +30,6 @@
   "require": {
     "react/socket-client": "0.4.*",
     "reactivex/rxphp": "^1.0.0",
-    "voryx/event-loop": "^0.1.1"
+    "voryx/event-loop": "^0.2.0"
   }
 }
