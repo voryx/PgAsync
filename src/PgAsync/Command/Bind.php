@@ -47,6 +47,9 @@ class Bind implements CommandInterface
                 $message .= Message::int32(-1);
                 continue;
             }
+            if ($this->params[$i] === false) {
+                $this->params[$i] = 'FALSE';
+            }
             $message .= Message::int32(strlen($this->params[$i])) . $this->params[$i];
         }
 
