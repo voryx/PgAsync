@@ -27,6 +27,9 @@ class Client implements EventEmitterInterface
     /** @var Connection[] */
     private $connections = [];
 
+    /** @var boolean */
+    private $autoDisconnect;
+
     /**
      * @param $parameters
      * @param \React\EventLoop\LoopInterface $loop
@@ -35,6 +38,10 @@ class Client implements EventEmitterInterface
     {
         $this->parameters = $parameters;
         $this->loop       = $loop ?: \EventLoop\getLoop();
+
+        if (isset($parameters['auto_disconnect'])) {
+            $this->autoDisconnect = $parameters['auto_disconnect'];
+        }
     }
 
     public function query($s)
@@ -64,8 +71,10 @@ class Client implements EventEmitterInterface
         }
 
         // no idle connections were found - spin up new one
-        $connection          = new Connection($this->parameters, $this->loop);
-        $this->connections[] = $connection;
+        $connection = new Connection($this->parameters, $this->loop);
+        if (!$this->autoDisconnect) {
+            $this->connections[] = $connection;
+        }
 
         return $connection;
     }
