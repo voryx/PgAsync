@@ -74,6 +74,12 @@ class Client implements EventEmitterInterface
         $connection = new Connection($this->parameters, $this->loop);
         if (!$this->autoDisconnect) {
             $this->connections[] = $connection;
+            
+            $connection->on('close', function () use ($connection) {
+                $this->connections = array_filter($this->connections, function ($c) use ($connection) {
+                    return $connection !== $c;
+                });
+            });
         }
 
         return $connection;
