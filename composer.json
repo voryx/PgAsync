@@ -28,7 +28,7 @@
     }
   },
   "require": {
-    "react/socket-client": "0.4.*",
+    "react/socket-client": "0.4.* || 0.5.*",
     "reactivex/rxphp": "^1.0.0",
     "voryx/event-loop": "^0.2.0"
   }
