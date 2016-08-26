@@ -2,6 +2,7 @@
 
 namespace PgAsync;
 
+use Evenement\EventEmitter;
 use PgAsync\Command\Bind;
 use PgAsync\Command\Close;
 use PgAsync\Command\Describe;
@@ -34,7 +35,7 @@ use Rx\Observable\AnonymousObservable;
 use Rx\ObserverInterface;
 use Rx\SchedulerInterface;
 
-class Connection
+class Connection extends EventEmitter
 {
     // This is copied a lot of these states from the libpq library
     // Not many of these constants are used right now
@@ -133,7 +134,6 @@ class Connection
 
         if (isset($parameters['auto_disconnect'])) {
             $this->auto_disconnect = $parameters['auto_disconnect'];
-            $this->auto_disconnect = $parameters['auto_disconnect'];
             unset($parameters['auto_disconnect']);
         }
 
@@ -169,6 +169,8 @@ class Connection
             function (Stream $stream) {
                 $this->stream     = $stream;
                 $this->connStatus = static::CONNECTION_MADE;
+                
+                $stream->on('close', [$this, 'onClose']);
 
                 $stream->on('data', [$this, 'onData']);
 
@@ -183,10 +185,10 @@ class Connection
                 $startup->setParameters($startupParameters);
                 $stream->write($startup->encodedMessage());
             },
-            function () {
+            function ($e) {
                 // connection error
-                // TODO - this needs to notify someone
                 $this->connStatus = static::CONNECTION_BAD;
+                $this->emit('error', [$e]);
             }
         );
     }
@@ -237,6 +239,11 @@ class Connection
 //        } else {
 //            echo "Unhandled message \"".$type."\"";
 //        }
+    }
+    
+    public function onClose()
+    {
+        $this->emit('close');
     }
 
     public function handleMessage($message)
@@ -329,6 +336,7 @@ class Connection
 
         $this->connStatus = $this::CONNECTION_BAD;
         $this->failAllCommandsWith(new \Exception($this->lastError));
+        $this->emit('error', [new \Exception($this->lastError)]);
         $this->disconnect();
     }
 
@@ -432,6 +440,8 @@ class Connection
 
         if ($this->connStatus === $this::CONNECTION_BAD) {
             $this->failAllCommandsWith(new \Exception("Bad connection: " . $this->lastError));
+            $this->disconnect();
+            return;
         }
 
         while ($this->commandQueue->count() > 0 && $this->queryState === static::STATE_READY) {
@@ -547,9 +557,12 @@ class Connection
         //echo "DEBUG: " . $string . "\n";
     }
 
+    /**
+     * https://www.postgresql.org/docs/9.2/static/protocol-flow.html#AEN95792
+     */
     public function disconnect()
     {
         $this->commandQueue->enqueue(new Terminate());
-        $this->stream->close();
+        $this->stream->end();
     }
 }
