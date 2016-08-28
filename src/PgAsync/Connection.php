@@ -62,6 +62,7 @@ class Connection extends EventEmitter
     const CONNECTION_SETENV = 6;            /* Negotiating environment. */
     const CONNECTION_SSL_STARTUP = 7;       /* Negotiating SSL. */
     const CONNECTION_NEEDED = 8;            /* Internal state: connect() needed */
+    const CONNECTION_CLOSED = 9;
 
     private $queryState;
     private $queryType;
@@ -243,7 +244,13 @@ class Connection extends EventEmitter
     
     public function onClose()
     {
+        $this->connStatus = static::CONNECTION_CLOSED;
         $this->emit('close');
+    }
+    
+    public function getConnectionStatus()
+    {
+        return $this->connStatus;
     }
 
     public function handleMessage($message)
@@ -348,9 +355,6 @@ class Connection extends EventEmitter
     {
         if ($this->currentCommand instanceof CommandInterface) {
             $this->currentCommand->getSubject()->onCompleted();
-            if ($this->auto_disconnect) {
-                $this->disconnect();
-            }
         }
         $this->debug("Command complete.");
     }
@@ -473,6 +477,9 @@ class Connection extends EventEmitter
             function (ObserverInterface $observer, SchedulerInterface $scheduler = null) use ($query) {
                 $q = new Query($query);
                 $this->commandQueue->enqueue($q);
+                if ($this->auto_disconnect) {
+                    $this->commandQueue->enqueue(new Terminate());
+                }
 
                 $disposable = $q->getSubject()->subscribe($observer, $scheduler);
 
@@ -530,6 +537,10 @@ class Connection extends EventEmitter
                 $sync = new Sync($queryString);
                 $this->commandQueue->enqueue($sync);
 
+                if ($this->auto_disconnect) {
+                    $this->commandQueue->enqueue(new Terminate());
+                }
+
                 $disposable = $sync->getSubject()->subscribe($observer, $scheduler);
 
                 $this->processQueue();
@@ -563,6 +574,6 @@ class Connection extends EventEmitter
     public function disconnect()
     {
         $this->commandQueue->enqueue(new Terminate());
-        $this->stream->end();
+        $this->processQueue();
     }
 }
