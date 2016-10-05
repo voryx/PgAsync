@@ -1,3 +1,9 @@
+# 1.0.1
+
+### Bug Fixes
+
+- Fixed disconnect endless loop when CONNECTION_BAD #17 #18
+
 # 1.0.0
 
 ### Bug Fixes
