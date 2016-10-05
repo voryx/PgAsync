@@ -444,7 +444,7 @@ class Connection extends EventEmitter
 
         if ($this->connStatus === $this::CONNECTION_BAD) {
             $this->failAllCommandsWith(new \Exception("Bad connection: " . $this->lastError));
-            $this->disconnect();
+            $this->stream->end();
             return;
         }
 
@@ -456,6 +456,9 @@ class Connection extends EventEmitter
                 $this->debug("Sending simple query: " . $c->getQueryString());
             }
             $this->stream->write($c->encodedMessage());
+            if ($c instanceof Terminate) {
+                $this->stream->end();
+            }
             if ($c->shouldWaitForComplete()) {
                 $this->queryState = $this::STATE_BUSY;
                 if ($c instanceof Query) {
