@@ -21,7 +21,7 @@ class PasswordMessage implements CommandInterface
     public function encodedMessage()
     {
 
-        return "p" . Message::prependLengthInt32($this->password);
+        return "p" . Message::prependLengthInt32($this->password . "\x00");
     }
 
     public function shouldWaitForComplete()
