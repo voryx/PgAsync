@@ -1,3 +1,9 @@
+# 1.0.2
+
+### Bug Fixes
+
+- Fixed #19. Passwords should be null terminated strings.
+
 # 1.0.1
 
 ### Bug Fixes
