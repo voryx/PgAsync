@@ -1,3 +1,9 @@
+# 1.0.3
+
+### Bug Fixes
+
+- Fixed recursion issue
+
 # 1.0.2
 
 ### Bug Fixes
