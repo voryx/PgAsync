@@ -201,6 +201,13 @@ class Connection extends EventEmitter
 
     public function onData($data)
     {
+        while (strlen($data) > 0) {
+            $data = $this->processData($data);
+        }
+    }
+
+    private function processData($data)
+    {
         if ($this->currentMessage) {
             $overflow = $this->currentMessage->parseData($data);
             // json_encode can slow things down here
@@ -208,22 +215,18 @@ class Connection extends EventEmitter
             if ($overflow === false) {
                 // there was not enough data to complete the message
                 // leave this as the currentParser
-                return;
+                return '';
             }
 
             $this->handleMessage($this->currentMessage);
 
             $this->currentMessage = null;
 
-            if (strlen($overflow) > 0) {
-                $this->onData($overflow);
-            }
-
-            return;
+            return $overflow;
         }
 
         if (strlen($data) == 0) {
-            return;
+            return '';
         }
 
         $type = $data[0];
@@ -231,7 +234,7 @@ class Connection extends EventEmitter
         $message = Message::createMessageFromIdentifier($type);
         if ($message !== false) {
             $this->currentMessage = $message;
-            $this->onData($data);
+            return $data;
         }
 
 //        if (in_array($type, ['R', 'S', 'D', 'K', '2', '3', 'C', 'd', 'c', 'G', 'H', 'W', 'D', 'I', 'E', 'V', 'n', 'N', 'A', 't', '1', 's', 'Z', 'T'])) {
