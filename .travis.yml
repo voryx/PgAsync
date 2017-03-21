@@ -4,11 +4,6 @@ sudo: required
 php:
   - 7.0
   - 7.1
-  - hhvm
-
-matrix:
-  allow_failures:
-    - php: hhvm
 
 addons:
   postgresql: "9.3"
