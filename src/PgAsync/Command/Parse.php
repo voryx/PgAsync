@@ -10,16 +10,12 @@ class Parse implements CommandInterface
     use CommandTrait;
     /**
      * Name of the prepared statement
-     * @var string
      */
     public $name;
 
-    /**
-     * @var string
-     */
     public $queryString;
 
-    public function __construct($name, $queryString)
+    public function __construct(string $name, string $queryString)
     {
         $this->name        = $name;
         $this->queryString = $queryString;
@@ -28,17 +24,17 @@ class Parse implements CommandInterface
 
     // there is mechanisms to pre-describe types - we aren't getting into that
 
-    public function encodedMessage()
+    public function encodedMessage(): string
     {
-        return "P" . Message::prependLengthInt32(
-            $this->name . "\0" .
-            $this->queryString . "\0" .
-            "\0\0"
+        return 'P' . Message::prependLengthInt32(
+                $this->name . "\0" .
+                $this->queryString . "\0" .
+                "\0\0"
 
-        );
+            );
     }
 
-    public function shouldWaitForComplete()
+    public function shouldWaitForComplete(): bool
     {
         return false;
     }

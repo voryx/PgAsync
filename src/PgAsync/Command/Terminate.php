@@ -6,20 +6,17 @@ class Terminate implements CommandInterface
 {
     use CommandTrait;
 
-    /**
-     * Terminate constructor.
-     */
     public function __construct()
     {
         $this->getSubject();
     }
 
-    public function encodedMessage()
+    public function encodedMessage(): string
     {
         return "X\0\0\0\x04";
     }
 
-    public function shouldWaitForComplete()
+    public function shouldWaitForComplete(): bool
     {
         return false;
     }

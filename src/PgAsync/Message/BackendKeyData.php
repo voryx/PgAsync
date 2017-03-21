@@ -7,7 +7,7 @@ class BackendKeyData extends Message
     /**
      * @inheritDoc
      */
-    public function parseMessage($rawMessage)
+    public function parseMessage(string $rawMessage)
     {
         // TODO - this is unsupported right now
     }
@@ -15,7 +15,7 @@ class BackendKeyData extends Message
     /**
      * @inheritDoc
      */
-    public static function getMessageIdentifier()
+    public static function getMessageIdentifier(): string
     {
         return 'K';
     }

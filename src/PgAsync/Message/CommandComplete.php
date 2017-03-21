@@ -13,24 +13,24 @@ class CommandComplete implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function parseMessage($rawMessage)
+    public function parseMessage(string $rawMessage)
     {
         $completeTag = substr($rawMessage, 5);
-        $parts       = explode(" ", $completeTag);
+        $parts       = explode(' ', $completeTag);
         if (isset($parts[0])) {
             switch ($parts[0]) {
-                case "INSERT":
+                case 'INSERT':
                     $this->rows = $parts[1];
                     if ($parts[1] == 1 && $parts[2] != 0) {
                         $this->oid = $parts[2];
                     }
                     break;
-                case "DELETE":
-                case "UPDATE":
-                case "SELECT":
-                case "MOVE":
-                case "FETCH":
-                case "COPY":
+                case 'DELETE':
+                case 'UPDATE':
+                case 'SELECT':
+                case 'MOVE':
+                case 'FETCH':
+                case 'COPY':
                     $this->rows = $parts[1];
                     break;
             }
@@ -42,7 +42,7 @@ class CommandComplete implements ParserInterface
     /**
      * @inheritDoc
      */
-    public static function getMessageIdentifier()
+    public static function getMessageIdentifier(): string
     {
         return 'C';
     }
@@ -55,18 +55,12 @@ class CommandComplete implements ParserInterface
         return $this->tag;
     }
 
-    /**
-     * @return int
-     */
-    public function getOid()
+    public function getOid(): int
     {
         return $this->oid;
     }
 
-    /**
-     * @return int
-     */
-    public function getRows()
+    public function getRows(): int
     {
         return $this->rows;
     }

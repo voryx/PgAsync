@@ -9,22 +9,16 @@ class Bind implements CommandInterface
     use CommandTrait;
 
     private $portalName = "";
-    private $statementName = "";
+    private $statementName;
+    private $params;
 
-    private $params = [];
-
-    /**
-     * Bind constructor.
-     * @param array $params
-     * @param string $statementName
-     */
-    public function __construct(array $params, $statementName)
+    public function __construct(array $params, string $statementName)
     {
         $this->params        = $params;
         $this->statementName = $statementName;
     }
 
-    public function encodedMessage()
+    public function encodedMessage(): string
     {
         $message = $this->portalName . "\0";
         $message .= $this->statementName . "\0";
@@ -59,7 +53,7 @@ class Bind implements CommandInterface
         return 'B' . Message::prependLengthInt32($message);
     }
 
-    public function shouldWaitForComplete()
+    public function shouldWaitForComplete(): bool
     {
         return false;
     }

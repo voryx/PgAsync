@@ -6,14 +6,13 @@ use Rx\Subject\Subject;
 
 interface CommandInterface
 {
-    public function encodedMessage();
+    public function encodedMessage(): string;
 
     public function complete();
 
     public function error();
 
-    public function shouldWaitForComplete();
+    public function shouldWaitForComplete(): bool;
 
-    /** @return Subject */
-    public function getSubject();
+    public function getSubject(): Subject;
 }

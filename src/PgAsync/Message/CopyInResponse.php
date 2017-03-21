@@ -9,7 +9,7 @@ class CopyInResponse implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function parseMessage($rawMessage)
+    public function parseMessage(string $rawMessage)
     {
         // TODO: Implement parseMessage() method.
     }
@@ -17,7 +17,7 @@ class CopyInResponse implements ParserInterface
     /**
      * @inheritDoc
      */
-    public static function getMessageIdentifier()
+    public static function getMessageIdentifier(): string
     {
         return 'G';
     }

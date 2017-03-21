@@ -6,7 +6,6 @@ use Rx\Subject\Subject;
 
 trait CommandTrait
 {
-    /** @var Subject */
     private $subject;
 
     public function complete()
@@ -17,16 +16,13 @@ trait CommandTrait
     public function error(\Exception $exception = null)
     {
         if (!($exception instanceof \Exception)) {
-            $exception = new \Exception("Unknown Error");
+            $exception = new \Exception('Unknown Error');
         }
 
         $this->getSubject()->onError($exception);
     }
 
-    /**
-     * @return Subject
-     */
-    public function getSubject()
+    public function getSubject(): Subject
     {
         if ($this->subject === null) {
             $this->subject = new Subject();

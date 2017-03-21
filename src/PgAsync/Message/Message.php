@@ -6,24 +6,24 @@ abstract class Message implements ParserInterface
 {
     use ParserTrait;
 
-    public static function int16($i)
+    public static function int16(string $i): string
     {
-        return pack("n", $i);
+        return pack('n', $i);
     }
 
-    public static function int32($i)
+    public static function int32(string $i): string
     {
-        return pack("N", $i);
+        return pack('N', $i);
     }
 
-    public static function prependLengthInt32($s)
+    public static function prependLengthInt32(string $s): string
     {
         $len = strlen($s);
 
         return Message::int32($len + 4) . $s;
     }
 
-    public static function createMessageFromIdentifier($identifier)
+    public static function createMessageFromIdentifier(string $identifier): ParserInterface
     {
         switch ($identifier) {
             case 'R':

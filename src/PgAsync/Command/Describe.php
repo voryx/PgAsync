@@ -12,19 +12,19 @@ class Describe implements CommandInterface
     private $portalOrStatement;
     private $name;
 
-    public function __construct($name = "")
+    public function __construct(string $name = "")
     {
         $this->name              = $name;
         $this->portalOrStatement = 'P';
         $this->subject           = new Subject();
     }
 
-    public function encodedMessage()
+    public function encodedMessage(): string
     {
         return 'D' . Message::prependLengthInt32("{$this->portalOrStatement}$this->name\0");
     }
 
-    public function shouldWaitForComplete()
+    public function shouldWaitForComplete(): bool
     {
         return false;
     }

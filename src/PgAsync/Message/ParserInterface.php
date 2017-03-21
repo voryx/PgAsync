@@ -20,12 +20,12 @@ interface ParserInterface
      * @param $rawMessage
      * @return mixed
      */
-    public function parseMessage($rawMessage);
+    public function parseMessage(string $rawMessage);
 
     /**
      * Returns a character that is the message identifier
      *
      * @return mixed
      */
-    public static function getMessageIdentifier();
+    public static function getMessageIdentifier(): string;
 }

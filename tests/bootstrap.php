@@ -19,7 +19,7 @@ foreach ($files as $file) {
     }
 }
 
-\PgAsync\Tests\TestCase::setDbUser(getenv("USER"));
+\PgAsync\Tests\TestCase::setDbUser(getenv('USER'));
 if (getenv("TRAVIS") == "true") {
     \PgAsync\Tests\TestCase::setDbUser("postgres");
 }

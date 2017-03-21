@@ -8,14 +8,14 @@ class SSLRequest implements CommandInterface
 {
     use CommandTrait;
 
-    public function encodedMessage()
+    public function encodedMessage(): string
     {
         $msg = Message::int32(80877103);
 
         return Message::prependLengthInt32($msg);
     }
 
-    public function shouldWaitForComplete()
+    public function shouldWaitForComplete(): bool
     {
         return false;
     }

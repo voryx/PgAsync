@@ -28,9 +28,12 @@ use PgAsync\Command\Query;
 use PgAsync\Message\ReadyForQuery;
 use PgAsync\Message\RowDescription;
 use PgAsync\Command\StartupMessage;
+use React\Dns\Resolver\Factory;
+use React\Dns\Resolver\Resolver;
 use React\EventLoop\LoopInterface;
 use React\SocketClient\Connector;
 use React\Stream\Stream;
+use Rx\Observable;
 use Rx\Observable\AnonymousObservable;
 use Rx\ObserverInterface;
 use Rx\SchedulerInterface;
@@ -101,17 +104,13 @@ class Connection extends EventEmitter
      *
      * @var string
      */
-    private $backendTransactionStatus = "UNKNOWN";
+    private $backendTransactionStatus = 'UNKNOWN';
 
     /** @var  bool */
     private $auto_disconnect = false;
-
     private $password;
 
-    /**
-     * Connection constructor.
-     */
-    public function __construct($parameters, LoopInterface $loop)
+    public function __construct(array $parameters, LoopInterface $loop)
     {
         if (!is_array($parameters) ||
             !isset($parameters['user']) ||
@@ -121,15 +120,15 @@ class Connection extends EventEmitter
         }
 
         if (!isset($parameters['host'])) {
-            $parameters["host"] = "127.0.0.1";
+            $parameters['host'] = '127.0.0.1';
         }
 
         if (!isset($parameters['port'])) {
-            $parameters["port"] = "5432";
+            $parameters['port'] = '5432';
         }
 
         if (array_key_exists('password', $parameters)) {
-            $this->password = $parameters["password"];
+            $this->password = $parameters['password'];
             unset($parameters['password']);
         }
 
@@ -148,29 +147,28 @@ class Connection extends EventEmitter
         $this->start();
     }
 
-    private function getDnsResolver()
+    private function getDnsResolver(): Resolver
     {
-        $dnsResolverFactory = new \React\Dns\Resolver\Factory();
-        $dns                = $dnsResolverFactory->createCached('8.8.8.8', $this->loop);
+        $dnsResolverFactory = new Factory();
 
-        return $dns;
+        return $dnsResolverFactory->createCached('8.8.8.8', $this->loop);
     }
 
     public function start()
     {
         if ($this->connStatus !== static::CONNECTION_NEEDED) {
-            throw new \Exception("Connection not in startable state");
+            throw new \Exception('Connection not in startable state');
         }
 
         $this->connStatus = static::CONNECTION_STARTED;
 
         $this->socket = new Connector($this->loop, $this->getDnsResolver());
 
-        $this->socket->create($this->parameters["host"], $this->parameters["port"])->then(
+        $this->socket->create($this->parameters['host'], $this->parameters['port'])->then(
             function (Stream $stream) {
                 $this->stream     = $stream;
                 $this->connStatus = static::CONNECTION_MADE;
-                
+
                 $stream->on('close', [$this, 'onClose']);
 
                 $stream->on('data', [$this, 'onData']);
@@ -179,8 +177,7 @@ class Connection extends EventEmitter
                 //  $stream->write($ssl->encodedMessage());
 
                 $startupParameters = $this->parameters;
-                unset($startupParameters["host"]);
-                unset($startupParameters["port"]);
+                unset($startupParameters['host'], $startupParameters['port']);
 
                 $startup = new StartupMessage();
                 $startup->setParameters($startupParameters);
@@ -244,13 +241,13 @@ class Connection extends EventEmitter
 //            echo "Unhandled message \"".$type."\"";
 //        }
     }
-    
+
     public function onClose()
     {
         $this->connStatus = static::CONNECTION_CLOSED;
         $this->emit('close');
     }
-    
+
     public function getConnectionStatus()
     {
         return $this->connStatus;
@@ -258,7 +255,7 @@ class Connection extends EventEmitter
 
     public function handleMessage($message)
     {
-        $this->debug("Handling " . get_class($message));
+        $this->debug('Handling ' . get_class($message));
         if ($message instanceof DataRow) {
             $this->handleDataRow($message);
         } elseif ($message instanceof Authentication) {
@@ -292,7 +289,7 @@ class Connection extends EventEmitter
     {
         if ($this->queryState === $this::STATE_BUSY && $this->currentCommand instanceof CommandInterface) {
             if (count($dataRow->getColumnValues()) !== count($this->columnNames)) {
-                throw new \Exception("Expected " . count($this->columnNames) . " data values got " . count($dataRow->getColumnValues()));
+                throw new \Exception('Expected ' . count($this->columnNames) . ' data values got ' . count($dataRow->getColumnValues()));
             }
             $row = array_combine($this->columnNames, $dataRow->getColumnValues());
 
@@ -300,11 +297,11 @@ class Connection extends EventEmitter
             // where objects can be added to allow formatting data as it is
             // processed according to the type
             foreach ($this->columns as $column) {
-                if ($column->typeOid == 16) { // bool
+                if ($column->typeOid === 16) { // bool
                     if ($row[$column->name] === null) {
                         continue;
                     }
-                    if ($row[$column->name] == "f") {
+                    if ($row[$column->name] === 'f') {
                         $row[$column->name] = false;
                         continue;
                     }
@@ -319,12 +316,12 @@ class Connection extends EventEmitter
 
     private function handleAuthentication(Authentication $message)
     {
-        $this->lastError = "Unhandled authentication message: " . $message->getAuthCode();
+        $this->lastError = 'Unhandled authentication message: ' . $message->getAuthCode();
         if ($message->getAuthCode() === $message::AUTH_CLEARTEXT_PASSWORD ||
             $message->getAuthCode() === $message::AUTH_MD5_PASSWORD
         ) {
             if ($this->password === null) {
-                $this->lastError = "Server asked for password, but none was configured.";
+                $this->lastError = 'Server asked for password, but none was configured.';
             } else {
                 $passwordToSend = $this->password;
                 if ($message->getAuthCode() === $message::AUTH_MD5_PASSWORD) {
@@ -359,7 +356,7 @@ class Connection extends EventEmitter
         if ($this->currentCommand instanceof CommandInterface) {
             $this->currentCommand->getSubject()->onCompleted();
         }
-        $this->debug("Command complete.");
+        $this->debug('Command complete.');
     }
 
     private function handleCopyInResponse(CopyInResponse $message)
@@ -377,7 +374,7 @@ class Connection extends EventEmitter
     private function handleErrorResponse(ErrorResponse $message)
     {
         $this->lastError = $message;
-        if ($message->getSeverity() == "FATAL") {
+        if ($message->getSeverity() === 'FATAL') {
             $this->connStatus = $this::CONNECTION_BAD;
             // notify any waiting commands
             $this->processQueue();
@@ -391,11 +388,11 @@ class Connection extends EventEmitter
             $extraInfo = null;
             if ($this->currentCommand instanceof Sync) {
                 $extraInfo = [
-                    "query_string" => $this->currentCommand->getDescription()
+                    'query_string' => $this->currentCommand->getDescription()
                 ];
             } elseif ($this->currentCommand instanceof Query) {
                 $extraInfo = [
-                    "query_string" => $this->currentCommand->getQueryString()
+                    'query_string' => $this->currentCommand->getQueryString()
                 ];
             }
             $this->currentCommand->getSubject()->onError(new ErrorException($message, $extraInfo));
@@ -409,7 +406,7 @@ class Connection extends EventEmitter
 
     private function handleParameterStatus(ParameterStatus $message)
     {
-        $this->debug($message->getParameterName() . ": " . $message->getParameterValue());
+        $this->debug($message->getParameterName() . ': ' . $message->getParameterValue());
     }
 
     private function handleParseComplete(ParseComplete $message)
@@ -441,12 +438,12 @@ class Connection extends EventEmitter
 
     public function processQueue()
     {
-        if ($this->commandQueue->count() == 0) {
+        if ($this->commandQueue->count() === 0) {
             return;
         }
 
         if ($this->connStatus === $this::CONNECTION_BAD) {
-            $this->failAllCommandsWith(new \Exception("Bad connection: " . $this->lastError));
+            $this->failAllCommandsWith(new \Exception('Bad connection: ' . $this->lastError));
             $this->stream->end();
             return;
         }
@@ -454,9 +451,9 @@ class Connection extends EventEmitter
         while ($this->commandQueue->count() > 0 && $this->queryState === static::STATE_READY) {
             /** @var CommandInterface $c */
             $c = $this->commandQueue->dequeue();
-            $this->debug("Sending " . get_class($c));
+            $this->debug('Sending ' . get_class($c));
             if ($c instanceof Query) {
-                $this->debug("Sending simple query: " . $c->getQueryString());
+                $this->debug('Sending simple query: ' . $c->getQueryString());
             }
             $this->stream->write($c->encodedMessage());
             if ($c instanceof Terminate) {
@@ -477,7 +474,7 @@ class Connection extends EventEmitter
         }
     }
 
-    public function query($query)
+    public function query($query): Observable
     {
         return new AnonymousObservable(
             function (ObserverInterface $observer, SchedulerInterface $scheduler = null) use ($query) {
@@ -497,7 +494,7 @@ class Connection extends EventEmitter
 
     }
 
-    public function executeStatement($queryString, $parameters = [])
+    public function executeStatement(string $queryString, array $parameters = []): Observable
     {
         /**
          * http://git.postgresql.org/gitweb/?p=postgresql.git;a=blob;f=src/interfaces/libpq/fe-exec.c;h=828f18e1110119efc3bf99ecf16d98ce306458ea;hb=6bcce25801c3fcb219e0d92198889ec88c74e2ff#l1381
@@ -523,7 +520,7 @@ class Connection extends EventEmitter
 
         return new AnonymousObservable(
             function (ObserverInterface $observer, SchedulerInterface $scheduler = null) use ($queryString, $parameters) {
-                $name = "somestatement";
+                $name = 'somestatement';
 
                 $close = new Close($name);
                 $this->commandQueue->enqueue($close);

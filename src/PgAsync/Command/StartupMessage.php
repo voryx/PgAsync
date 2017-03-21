@@ -32,7 +32,7 @@ class StartupMessage implements CommandInterface
     /**
      * @return array
      */
-    public function getParameters()
+    public function getParameters(): array
     {
         return $this->parameters;
     }
@@ -40,12 +40,12 @@ class StartupMessage implements CommandInterface
     /**
      * @param array $parameters
      */
-    public function setParameters($parameters)
+    public function setParameters(array $parameters)
     {
         $this->parameters = $parameters;
     }
 
-    public function encodedMessage()
+    public function encodedMessage(): string
     {
         $msg = "";
 
@@ -60,7 +60,7 @@ class StartupMessage implements CommandInterface
         return Message::prependLengthInt32($msg);
     }
 
-    public function shouldWaitForComplete()
+    public function shouldWaitForComplete(): bool
     {
         return false;
     }

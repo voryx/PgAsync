@@ -13,15 +13,17 @@ class RowDescription implements ParserInterface
 
     /**
      * @inheritDoc
+     * @throws \UnderflowException
+     * @throws \InvalidArgumentException
      */
-    public function parseMessage($rawMessage)
+    public function parseMessage(string $rawMessage)
     {
         $len = strlen($rawMessage);
         if ($len < 7) {
             throw new \UnderflowException;
         }
 
-        $columnCount   = unpack("n", substr($rawMessage, 5, 2))[1];
+        $columnCount   = unpack('n', substr($rawMessage, 5, 2))[1];
         $columnStart   = 7;
         $this->columns = [];
         for ($i = 0; $i < $columnCount; $i++) {
@@ -34,17 +36,17 @@ class RowDescription implements ParserInterface
 
             $column->name     = substr($rawMessage, $columnStart, $strEnd - $columnStart);
             $pos              = $strEnd + 1;
-            $column->tableOid = unpack("N", substr($rawMessage, $pos, 4))[1];
+            $column->tableOid = unpack('N', substr($rawMessage, $pos, 4))[1];
             $pos += 4;
-            $column->attrNo = unpack("n", substr($rawMessage, $pos, 2))[1];
+            $column->attrNo = unpack('n', substr($rawMessage, $pos, 2))[1];
             $pos += 2;
-            $column->typeOid = unpack("N", substr($rawMessage, $pos, 4))[1];
+            $column->typeOid = unpack('N', substr($rawMessage, $pos, 4))[1];
             $pos += 4;
-            $column->dataSize = unpack("n", substr($rawMessage, $pos, 2))[1];
+            $column->dataSize = unpack('n', substr($rawMessage, $pos, 2))[1];
             $pos += 2;
-            $column->typeModifier = unpack("N", substr($rawMessage, $pos, 4))[1];
+            $column->typeModifier = unpack('N', substr($rawMessage, $pos, 4))[1];
             $pos += 4;
-            $column->formatCode = unpack("n", substr($rawMessage, $pos, 2))[1];
+            $column->formatCode = unpack('n', substr($rawMessage, $pos, 2))[1];
             $pos += 2;
             $this->columns[] = $column;
             $columnStart     = $pos;
@@ -54,7 +56,7 @@ class RowDescription implements ParserInterface
     /**
      * @inheritDoc
      */
-    public static function getMessageIdentifier()
+    public static function getMessageIdentifier(): string
     {
         return 'T';
     }
