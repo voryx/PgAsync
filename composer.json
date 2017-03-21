@@ -27,6 +27,11 @@
       "PgAsync\\": "src/PgAsync/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "PgAsync\\Tests\\": "tests/"
+    }
+  },
   "require": {
     "react/socket-client": "0.4.* || 0.5.*",
     "voryx/event-loop": "^2.0",
