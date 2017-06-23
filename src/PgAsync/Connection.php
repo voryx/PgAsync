@@ -185,6 +185,7 @@ class Connection extends EventEmitter
             },
             function ($e) {
                 // connection error
+                $this->failAllCommandsWith($e);
                 $this->connStatus = static::CONNECTION_BAD;
                 $this->emit('error', [$e]);
             }
@@ -426,7 +427,7 @@ class Connection extends EventEmitter
         $this->addColumns($message->getColumns());
     }
 
-    private function failAllCommandsWith(\Exception $e)
+    private function failAllCommandsWith(\Throwable $e)
     {
         while ($this->commandQueue->count() > 0) {
             $c = $this->commandQueue->dequeue();
