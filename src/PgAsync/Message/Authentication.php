@@ -19,8 +19,9 @@ class Authentication extends Message
 
     /**
      * @inheritDoc
+     * @throws \InvalidArgumentException
      */
-    public function parseMessage($rawMessage)
+    public function parseMessage(string $rawMessage)
     {
         $authCode = unpack("N", substr($rawMessage, 5, 4))[1];
         switch ($authCode) {
@@ -31,8 +32,8 @@ class Authentication extends Message
             case $this::AUTH_CLEARTEXT_PASSWORD:
                 break; // AuthenticationCleartextPassword
             case $this::AUTH_MD5_PASSWORD:
-                if (strlen($rawMessage) != 13) {
-                    throw new \InvalidArgumentException("Invalid raw message length for MD5 authentication message.");
+                if (strlen($rawMessage) !== 13) {
+                    throw new \InvalidArgumentException('Invalid raw message length for MD5 authentication message.');
                 }
 
                 $this->salt = substr($rawMessage, 9, 4);
@@ -51,26 +52,20 @@ class Authentication extends Message
         $this->authCode = $authCode;
     }
 
-    /**
-     * @inheritDoc
-     */
-    public static function getMessageIdentifier()
+    public static function getMessageIdentifier(): string
     {
         return 'R';
     }
 
-    /**
-     * @return mixed
-     */
-    public function getAuthCode()
+    public function getAuthCode(): int
     {
         return $this->authCode;
     }
 
-    public function getSalt()
+    public function getSalt(): string
     {
         if ($this->getAuthCode() !== $this::AUTH_MD5_PASSWORD) {
-            throw new \Exception("getSalt called on non-md5 authentication message");
+            throw new \Exception('getSalt called on non-md5 authentication message');
         }
 
         return $this->salt;

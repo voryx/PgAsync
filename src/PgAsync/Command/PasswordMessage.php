@@ -10,21 +10,18 @@ class PasswordMessage implements CommandInterface
 
     private $password;
 
-    /**
-     * PasswordMessage constructor.
-     */
-    public function __construct($password)
+    public function __construct(string $password)
     {
         $this->password = $password;
     }
 
-    public function encodedMessage()
+    public function encodedMessage(): string
     {
 
-        return "p" . Message::prependLengthInt32($this->password . "\x00");
+        return 'p' . Message::prependLengthInt32($this->password . "\x00");
     }
 
-    public function shouldWaitForComplete()
+    public function shouldWaitForComplete(): bool
     {
         return false;
     }

@@ -9,7 +9,7 @@ use React\EventLoop\Timer\Timer;
 
 class TestCase extends \PHPUnit_Framework_TestCase
 {
-    const DBNAME = "pgasync_test";
+    const DBNAME = 'pgasync_test';
 
     /** @var LoopInterface */
     public static $loop;

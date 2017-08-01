@@ -8,30 +8,23 @@ class Sync implements CommandInterface
 
     private $description;
 
-    /**
-     * Sync constructor.
-     * @param string $description
-     */
-    public function __construct($description = "")
+    public function __construct(string $description = "")
     {
         $this->description = $description;
         $this->getSubject();
     }
 
-    public function encodedMessage()
+    public function encodedMessage(): string
     {
         return "S\0\0\0\x04";
     }
 
-    public function shouldWaitForComplete()
+    public function shouldWaitForComplete(): bool
     {
         return true;
     }
 
-    /**
-     * @return string
-     */
-    public function getDescription()
+    public function getDescription(): string
     {
         return $this->description;
     }

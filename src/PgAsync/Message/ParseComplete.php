@@ -9,14 +9,14 @@ class ParseComplete implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function parseMessage($rawMessage)
+    public function parseMessage(string $rawMessage)
     {
     }
 
     /**
      * @inheritDoc
      */
-    public static function getMessageIdentifier()
+    public static function getMessageIdentifier(): string
     {
         return '1';
     }

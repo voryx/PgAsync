@@ -12,7 +12,7 @@ class ParameterStatus implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function parseMessage($rawMessage)
+    public function parseMessage(string $rawMessage)
     {
         $payload = substr($rawMessage, 5, strlen($rawMessage) - 5);
 
@@ -24,23 +24,17 @@ class ParameterStatus implements ParserInterface
     /**
      * @inheritDoc
      */
-    public static function getMessageIdentifier()
+    public static function getMessageIdentifier(): string
     {
         return 'S';
     }
 
-    /**
-     * @return string
-     */
-    public function getParameterName()
+    public function getParameterName(): string
     {
         return $this->parameterName;
     }
 
-    /**
-     * @return string
-     */
-    public function getParameterValue()
+    public function getParameterValue(): string
     {
         return $this->parameterValue;
     }

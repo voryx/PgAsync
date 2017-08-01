@@ -11,7 +11,7 @@ class NoticeResponse implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function parseMessage($rawMessage)
+    public function parseMessage(string $rawMessage)
     {
         $rawMsgs = substr($rawMessage, 5);
         $parts   = explode("\0", $rawMsgs);
@@ -25,8 +25,8 @@ class NoticeResponse implements ParserInterface
             $msg = substr($part, 1);
 
             $this->noticeMessages[] = [
-                "type"    => $fieldType,
-                "message" => $msg
+                'type'    => $fieldType,
+                'message' => $msg
             ];
         }
     }
@@ -34,15 +34,12 @@ class NoticeResponse implements ParserInterface
     /**
      * @inheritDoc
      */
-    public static function getMessageIdentifier()
+    public static function getMessageIdentifier(): string
     {
         return 'N';
     }
 
-    /**
-     * @return array
-     */
-    public function getNoticeMessages()
+    public function getNoticeMessages(): array
     {
         return $this->noticeMessages;
     }

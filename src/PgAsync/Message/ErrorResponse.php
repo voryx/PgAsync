@@ -11,7 +11,7 @@ class ErrorResponse implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function parseMessage($rawMessage)
+    public function parseMessage(string $rawMessage)
     {
         $rawMsgs = substr($rawMessage, 5);
         $parts   = explode("\0", $rawMsgs);
@@ -40,8 +40,8 @@ class ErrorResponse implements ParserInterface
             $msg = substr($part, 1);
 
             $this->errorMessages[] = [
-                "type"    => $fieldType,
-                "message" => $msg
+                'type'    => $fieldType,
+                'message' => $msg
             ];
         }
     }
@@ -49,7 +49,7 @@ class ErrorResponse implements ParserInterface
     /**
      * @inheritDoc
      */
-    public static function getMessageIdentifier()
+    public static function getMessageIdentifier(): string
     {
         return 'E';
     }
@@ -62,10 +62,7 @@ class ErrorResponse implements ParserInterface
         return $this->errorMessages;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getSeverity()
+    public function getSeverity(): string
     {
         $severity = $this->getErrorMessagesOfType('S');
 
@@ -79,12 +76,12 @@ class ErrorResponse implements ParserInterface
         return count($message) > 0 ? array_pop($message) : null;
     }
 
-    private function getErrorMessagesOfType($type)
+    private function getErrorMessagesOfType($type):array
     {
         return array_map(function ($x) {
             return $x['message'];
         }, array_filter($this->getErrorMessages(), function ($x) use ($type) {
-            return $x['type'] == $type;
+            return $x['type'] === $type;
         }));
     }
 
@@ -93,6 +90,6 @@ class ErrorResponse implements ParserInterface
      */
     public function __toString()
     {
-        return $this->getSeverity() . ": " . $this->getMessage();
+        return $this->getSeverity() . ': ' . $this->getMessage();
     }
 }

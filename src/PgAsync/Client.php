@@ -6,10 +6,6 @@ use Evenement\EventEmitterInterface;
 use Evenement\EventEmitterTrait;
 use React\EventLoop\LoopInterface;
 
-/**
- * Class Client
- * @package PgAsync
- */
 class Client implements EventEmitterInterface
 {
     use EventEmitterTrait;
@@ -30,11 +26,7 @@ class Client implements EventEmitterInterface
     /** @var boolean */
     private $autoDisconnect;
 
-    /**
-     * @param $parameters
-     * @param \React\EventLoop\LoopInterface $loop
-     */
-    public function __construct($parameters, LoopInterface $loop = null)
+    public function __construct(array $parameters, LoopInterface $loop = null)
     {
         $this->parameters = $parameters;
         $this->loop       = $loop ?: \EventLoop\getLoop();
@@ -51,14 +43,14 @@ class Client implements EventEmitterInterface
         return $conn->query($s);
     }
 
-    public function executeStatement($queryString, $parameters = [])
+    public function executeStatement(string $queryString, array $parameters = [])
     {
         $conn = $this->getIdleConnection();
 
         return $conn->executeStatement($queryString, $parameters);
     }
 
-    public function getIdleConnection()
+    public function getIdleConnection(): Connection
     {
         // we want to get the first available one
         // this will keep the connections at the front the busiest
@@ -74,7 +66,7 @@ class Client implements EventEmitterInterface
         $connection = new Connection($this->parameters, $this->loop);
         if (!$this->autoDisconnect) {
             $this->connections[] = $connection;
-            
+
             $connection->on('close', function () use ($connection) {
                 $this->connections = array_filter($this->connections, function ($c) use ($connection) {
                     return $connection !== $c;
@@ -85,7 +77,7 @@ class Client implements EventEmitterInterface
         return $connection;
     }
 
-    public function getConnectionCount()
+    public function getConnectionCount(): int
     {
         return count($this->connections);
     }

@@ -12,21 +12,21 @@ class DataRow implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function parseMessage($rawMessage)
+    public function parseMessage(string $rawMessage)
     {
         $len = strlen($rawMessage);
         if ($len < 8) {
             throw new \UnderflowException;
         }
 
-        $columnCount        = unpack("n", substr($rawMessage, 5, 2))[1];
+        $columnCount        = unpack('n', substr($rawMessage, 5, 2))[1];
         $this->columnValues = [];
         $columnStart        = 7;
         for ($i = 0; $i < $columnCount; $i++) {
             if ($len < $columnStart + 4) {
                 throw new \UnderflowException;
             }
-            $columnLen = unpack("N", substr($rawMessage, $columnStart, 4))[1];
+            $columnLen = unpack('N', substr($rawMessage, $columnStart, 4))[1];
             if ($columnLen == 4294967295) {
                 $columnLen            = 0;
                 $this->columnValues[] = null;
@@ -39,7 +39,7 @@ class DataRow implements ParserInterface
             $columnStart += 4 + $columnLen;
         }
 
-        if ($len != $columnStart) {
+        if ($len !== $columnStart) {
             //echo "Warning, there was some straggling info in the data row...";
         }
     }
@@ -47,15 +47,12 @@ class DataRow implements ParserInterface
     /**
      * @inheritDoc
      */
-    public static function getMessageIdentifier()
+    public static function getMessageIdentifier(): string
     {
         return 'D';
     }
 
-    /**
-     * @return array
-     */
-    public function getColumnValues()
+    public function getColumnValues(): array
     {
         return $this->columnValues;
     }

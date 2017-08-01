@@ -9,7 +9,7 @@ class EmptyQueryResponse implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function parseMessage($rawMessage)
+    public function parseMessage(string $rawMessage)
     {
         // there is nothing to parse here
     }
@@ -17,7 +17,7 @@ class EmptyQueryResponse implements ParserInterface
     /**
      * @inheritDoc
      */
-    public static function getMessageIdentifier()
+    public static function getMessageIdentifier(): string
     {
         return 'I';
     }
