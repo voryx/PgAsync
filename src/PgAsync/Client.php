@@ -5,6 +5,7 @@ namespace PgAsync;
 use Evenement\EventEmitterInterface;
 use Evenement\EventEmitterTrait;
 use React\EventLoop\LoopInterface;
+use React\Socket\ConnectorInterface;
 
 class Client implements EventEmitterInterface
 {
@@ -26,10 +27,14 @@ class Client implements EventEmitterInterface
     /** @var boolean */
     private $autoDisconnect;
 
-    public function __construct(array $parameters, LoopInterface $loop = null)
+    /** @var ConnectorInterface */
+    private $connector;
+
+    public function __construct(array $parameters, LoopInterface $loop = null, ConnectorInterface $connector = null)
     {
         $this->parameters = $parameters;
         $this->loop       = $loop ?: \EventLoop\getLoop();
+        $this->connector  = $connector;
 
         if (isset($parameters['auto_disconnect'])) {
             $this->autoDisconnect = $parameters['auto_disconnect'];
@@ -63,7 +68,7 @@ class Client implements EventEmitterInterface
         }
 
         // no idle connections were found - spin up new one
-        $connection = new Connection($this->parameters, $this->loop);
+        $connection = new Connection($this->parameters, $this->loop, $this->connector);
         if (!$this->autoDisconnect) {
             $this->connections[] = $connection;
 
