@@ -2,15 +2,11 @@
 
 namespace PgAsync;
 
-use Evenement\EventEmitterInterface;
-use Evenement\EventEmitterTrait;
 use React\EventLoop\LoopInterface;
 use React\Socket\ConnectorInterface;
 
-class Client implements EventEmitterInterface
+class Client
 {
-    use EventEmitterTrait;
-
     /** @var  string */
     protected $connectString;
 
