@@ -484,7 +484,7 @@ class Connection extends EventEmitter
                     $this->start();
                 }
                 if ($this->connStatus === $this::CONNECTION_BAD) {
-                    $observer->onError(new \Exception('Connetion failed'));
+                    $observer->onError(new \Exception('Connection failed'));
                     return new EmptyDisposable();
                 }
 
