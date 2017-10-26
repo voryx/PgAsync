@@ -31,8 +31,10 @@ use PgAsync\Command\StartupMessage;
 use React\Dns\Resolver\Factory;
 use React\Dns\Resolver\Resolver;
 use React\EventLoop\LoopInterface;
-use React\SocketClient\Connector;
-use React\Stream\Stream;
+use React\Socket\Connector;
+use React\Socket\ConnectorInterface;
+use React\Stream\DuplexStreamInterface;
+use Rx\Disposable\EmptyDisposable;
 use Rx\Observable;
 use Rx\Observable\AnonymousObservable;
 use Rx\ObserverInterface;
@@ -71,8 +73,10 @@ class Connection extends EventEmitter
     private $queryType;
     private $connStatus;
 
-    /** @var Stream */
+    /** @var DuplexStreamInterface */
     private $stream;
+
+    /** @var ConnectorInterface */
     private $socket;
 
     private $parameters;
@@ -110,7 +114,7 @@ class Connection extends EventEmitter
     private $auto_disconnect = false;
     private $password;
 
-    public function __construct(array $parameters, LoopInterface $loop)
+    public function __construct(array $parameters, LoopInterface $loop, ConnectorInterface $connector = null)
     {
         if (!is_array($parameters) ||
             !isset($parameters['user']) ||
@@ -143,18 +147,10 @@ class Connection extends EventEmitter
         $this->queryState   = static::STATE_BUSY;
         $this->queryType    = static::QUERY_SIMPLE;
         $this->connStatus   = static::CONNECTION_NEEDED;
-
-        $this->start();
+        $this->socket       = $connector ?: new Connector($loop);
     }
 
-    private function getDnsResolver(): Resolver
-    {
-        $dnsResolverFactory = new Factory();
-
-        return $dnsResolverFactory->createCached('8.8.8.8', $this->loop);
-    }
-
-    public function start()
+    private function start()
     {
         if ($this->connStatus !== static::CONNECTION_NEEDED) {
             throw new \Exception('Connection not in startable state');
@@ -162,10 +158,10 @@ class Connection extends EventEmitter
 
         $this->connStatus = static::CONNECTION_STARTED;
 
-        $this->socket = new Connector($this->loop, $this->getDnsResolver());
+        $uri = 'tcp://' . $this->parameters['host'] . ':' . $this->parameters['port'];
 
-        $this->socket->create($this->parameters['host'], $this->parameters['port'])->then(
-            function (Stream $stream) {
+        $this->socket->connect($uri)->then(
+            function (DuplexStreamInterface $stream) {
                 $this->stream     = $stream;
                 $this->connStatus = static::CONNECTION_MADE;
 
@@ -427,8 +423,10 @@ class Connection extends EventEmitter
         $this->addColumns($message->getColumns());
     }
 
-    private function failAllCommandsWith(\Throwable $e)
+    private function failAllCommandsWith(\Throwable $e = null)
     {
+        $e = $e ?: new \Exception('unknown error');
+
         while ($this->commandQueue->count() > 0) {
             $c = $this->commandQueue->dequeue();
             if ($c instanceof CommandInterface) {
@@ -445,7 +443,10 @@ class Connection extends EventEmitter
 
         if ($this->connStatus === $this::CONNECTION_BAD) {
             $this->failAllCommandsWith(new \Exception('Bad connection: ' . $this->lastError));
-            $this->stream->end();
+            if ($this->stream) {
+                $this->stream->end();
+                $this->stream = null;
+            }
             return;
         }
 
@@ -479,6 +480,14 @@ class Connection extends EventEmitter
     {
         return new AnonymousObservable(
             function (ObserverInterface $observer, SchedulerInterface $scheduler = null) use ($query) {
+                if ($this->connStatus === $this::CONNECTION_NEEDED) {
+                    $this->start();
+                }
+                if ($this->connStatus === $this::CONNECTION_BAD) {
+                    $observer->onError(new \Exception('Connection failed'));
+                    return new EmptyDisposable();
+                }
+
                 $q = new Query($query);
                 $this->commandQueue->enqueue($q);
                 if ($this->auto_disconnect) {
@@ -521,6 +530,14 @@ class Connection extends EventEmitter
 
         return new AnonymousObservable(
             function (ObserverInterface $observer, SchedulerInterface $scheduler = null) use ($queryString, $parameters) {
+                if ($this->connStatus === $this::CONNECTION_NEEDED) {
+                    $this->start();
+                }
+                if ($this->connStatus === $this::CONNECTION_BAD) {
+                    $observer->onError(new \Exception('Connetion failed'));
+                    return new EmptyDisposable();
+                }
+
                 $name = 'somestatement';
 
                 $close = new Close($name);
