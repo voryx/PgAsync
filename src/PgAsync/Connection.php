@@ -437,6 +437,10 @@ class Connection extends EventEmitter
 
     public function processQueue()
     {
+        if ($this->commandQueue->count() === 0 && $this->queryState === static::STATE_READY && $this->auto_disconnect) {
+            $this->commandQueue->enqueue(new Terminate());
+        }
+
         if ($this->commandQueue->count() === 0) {
             return;
         }
@@ -557,10 +561,6 @@ class Connection extends EventEmitter
 
                 $sync = new Sync($queryString);
                 $this->commandQueue->enqueue($sync);
-
-                if ($this->auto_disconnect) {
-                    $this->commandQueue->enqueue(new Terminate());
-                }
 
                 $disposable = $sync->getSubject()->subscribe($observer, $scheduler);
 

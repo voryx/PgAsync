@@ -133,4 +133,73 @@ class ConnectionTest extends TestCase
 
         $this->assertInstanceOf(RecordNotFoundException::class, $error);
     }
+
+    public function testSendingTwoQueriesWithoutWaitingNoAutoDisconnect()
+    {
+        $conn = new Connection([
+            "user"            => $this->getDbUser(),
+            "database"        => $this::getDbName()
+        ], $this->getLoop());
+
+        $testQuery = $conn->query("SELECT pg_sleep(0.1)")->mapTo(1)
+            ->merge($conn->query("SELECT pg_sleep(0.2)")->mapTo(2))
+            ->toArray();
+
+        $value = null;
+
+        $testQuery->subscribe(new \Rx\Observer\CallbackObserver(
+            function ($results) use (&$value) {
+                $value = $results;
+            },
+            function (\Throwable $e) use (&$error) {
+                $this->fail('Error while testing');
+                $this->stopLoop();
+            },
+            function () {
+                $this->stopLoop();
+            }
+        ));
+
+        $this->runLoopWithTimeout(2);
+
+        $this->assertEquals([1,2], $value);
+
+        $conn->disconnect();
+        $this->getLoop()->run();
+    }
+
+    public function testSendingTwoQueriesWithoutWaitingAutoDisconnect()
+    {
+        $this->markTestSkipped('This scenario doesn\'t work right yet.');
+        $conn = new Connection([
+            "user"            => $this->getDbUser(),
+            "database"        => $this::getDbName(),
+            "auto_disconnect" => true
+        ], $this->getLoop());
+
+        $testQuery = $conn->query("SELECT pg_sleep(0.1)")->mapTo(1)
+            ->merge($conn->query("SELECT pg_sleep(0.2)")->mapTo(2))
+            ->toArray();
+
+        $value = null;
+
+        $testQuery->subscribe(new \Rx\Observer\CallbackObserver(
+            function ($results) use (&$value) {
+                $value = $results;
+            },
+            function (\Throwable $e) use (&$error) {
+                $this->fail('Error while testing');
+                $this->stopLoop();
+            },
+            function () {
+                $this->stopLoop();
+            }
+        ));
+
+        $this->runLoopWithTimeout(2);
+
+        $this->assertEquals([1,2], $value);
+
+        $this->getLoop()->run();
+    }
 }
