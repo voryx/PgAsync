@@ -48,16 +48,14 @@ class ClientTest extends TestCase
                 $hello = $x;
             },
             function ($e) {
-                $this->fail("Got an error");
                 $this->cancelCurrentTimeoutTimer();
                 $this->stopLoop();
+                $this->fail("Got an error");
             },
             function () {
                 $this->cancelCurrentTimeoutTimer();
                 // We should wait here for a moment for the connection state to return to ready
-                $this->getLoop()->addTimer(0.1, function () {
-                    $this->stopLoop();
-                });
+                $this->stopLoop();
             }
         ));
 
@@ -73,6 +71,8 @@ class ClientTest extends TestCase
         $this->assertEquals(1, $client->getConnectionCount());
         
         $client->closeNow();
+
+        $this->getLoop()->run(); // run the loop to allow the connection to disconnect
     }
 
     public function testAutoDisconnect()

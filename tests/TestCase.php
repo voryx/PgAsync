@@ -30,8 +30,9 @@ class TestCase extends \PHPUnit_Framework_TestCase
 
     public static function stopLoop()
     {
-
-        static::getLoop()->stop();
+        static::getLoop()->addTimer(0.1, function () {
+            static::getLoop()->stop();
+        });
     }
 
     public static function cancelCurrentTimeoutTimer()

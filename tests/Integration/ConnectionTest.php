@@ -40,6 +40,36 @@ class ConnectionTest extends TestCase
         $this->assertEquals(Connection::CONNECTION_CLOSED, $conn->getConnectionStatus());
     }
 
+    public function testConnectionDisconnectAfterSuccessfulStatement()
+    {
+        $conn = new Connection([
+            "user"            => $this->getDbUser(),
+            "database"        => $this::getDbName(),
+            "auto_disconnect" => true
+        ], $this->getLoop());
+
+        $hello = null;
+
+        $conn->executeStatement("SELECT 'Hello' AS hello", [])->subscribe(new CallbackObserver(
+            function ($x) use (&$hello) {
+                $this->assertNull($hello);
+                $hello = $x['hello'];
+            },
+            function (\Exception $e) {
+                $this->fail();
+                $this->stopLoop();
+            },
+            function () {
+                $this->stopLoop();
+            }
+        ));
+
+        $this->runLoopWithTimeout(2);
+
+        $this->assertEquals('Hello', $hello);
+        $this->assertEquals(Connection::CONNECTION_CLOSED, $conn->getConnectionStatus());
+    }
+
     public function testConnectionDisconnectAfterFailedQuery()
     {
         $conn = new Connection([
