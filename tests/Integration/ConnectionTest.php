@@ -28,9 +28,7 @@ class ConnectionTest extends TestCase
                 $this->fail();
             },
             function () {
-                $this->getLoop()->addTimer(0.1, function () {
-                    $this->stopLoop();
-                });
+                $this->stopLoop();
             }
         ));
         
@@ -87,9 +85,7 @@ class ConnectionTest extends TestCase
             },
             function (\Exception $e) use (&$hello) {
                 $hello = "Hello";
-                $this->getLoop()->addTimer(0.1, function () {
-                    $this->stopLoop();
-                });
+                $this->stopLoop();
             },
             function () {
                 echo "complete\n";

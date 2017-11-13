@@ -4,6 +4,8 @@ namespace PgAsync;
 
 use React\EventLoop\LoopInterface;
 use React\Socket\ConnectorInterface;
+use Rx\Observable;
+use Rx\Observable\AnonymousObservable;
 
 class Client
 {
@@ -39,16 +41,20 @@ class Client
 
     public function query($s)
     {
-        $conn = $this->getIdleConnection();
+        return Observable::defer(function () use ($s) {
+            $conn = $this->getIdleConnection();
 
-        return $conn->query($s);
+            return $conn->query($s);
+        });
     }
 
     public function executeStatement(string $queryString, array $parameters = [])
     {
-        $conn = $this->getIdleConnection();
+        return Observable::defer(function () use ($queryString, $parameters) {
+            $conn = $this->getIdleConnection();
 
-        return $conn->executeStatement($queryString, $parameters);
+            return $conn->executeStatement($queryString, $parameters);
+        });
     }
 
     public function getIdleConnection(): Connection
