@@ -494,9 +494,6 @@ class Connection extends EventEmitter
 
                 $q = new Query($query);
                 $this->commandQueue->enqueue($q);
-                if ($this->auto_disconnect) {
-                    $this->commandQueue->enqueue(new Terminate());
-                }
 
                 $disposable = $q->getSubject()->subscribe($observer, $scheduler);
 

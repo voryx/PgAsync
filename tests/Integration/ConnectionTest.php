@@ -166,7 +166,6 @@ class ConnectionTest extends TestCase
 
     public function testSendingTwoQueriesWithoutWaitingAutoDisconnect()
     {
-        $this->markTestSkipped('This scenario doesn\'t work right yet.');
         $conn = new Connection([
             "user"            => $this->getDbUser(),
             "database"        => $this::getDbName(),
