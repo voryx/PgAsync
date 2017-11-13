@@ -65,15 +65,17 @@ class Client
 
         // no idle connections were found - spin up new one
         $connection = new Connection($this->parameters, $this->loop, $this->connector);
-        if (!$this->autoDisconnect) {
-            $this->connections[] = $connection;
-
-            $connection->on('close', function () use ($connection) {
-                $this->connections = array_filter($this->connections, function ($c) use ($connection) {
-                    return $connection !== $c;
-                });
-            });
+        if ($this->autoDisconnect) {
+            return $connection;
         }
+
+        $this->connections[] = $connection;
+
+        $connection->on('close', function () use ($connection) {
+            $this->connections = array_filter($this->connections, function ($c) use ($connection) {
+                return $connection !== $c;
+            });
+        });
 
         return $connection;
     }
