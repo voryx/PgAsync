@@ -5,7 +5,6 @@ namespace PgAsync;
 use React\EventLoop\LoopInterface;
 use React\Socket\ConnectorInterface;
 use Rx\Observable;
-use Rx\Observable\AnonymousObservable;
 
 class Client
 {
