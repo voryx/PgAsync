@@ -193,6 +193,19 @@ class Connection extends EventEmitter
         return $this->queryState;
     }
 
+    public function getBacklogLength() : int
+    {
+        return array_reduce(
+            $this->commandQueue,
+            function ($a, CommandInterface $command) {
+                if ($command instanceof Query || $command instanceof Sync) {
+                    $a++;
+                }
+                return $a;
+            },
+            0);
+    }
+
     public function onData($data)
     {
         while (strlen($data) > 0) {

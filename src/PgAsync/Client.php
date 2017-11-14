@@ -27,21 +27,36 @@ class Client
     /** @var ConnectorInterface */
     private $connector;
 
+    /** @var int */
+    private $maxConnections = 5;
+
     public function __construct(array $parameters, LoopInterface $loop = null, ConnectorInterface $connector = null)
     {
-        $this->parameters = $parameters;
         $this->loop       = $loop ?: \EventLoop\getLoop();
         $this->connector  = $connector;
 
         if (isset($parameters['auto_disconnect'])) {
             $this->autoDisconnect = $parameters['auto_disconnect'];
         }
+
+        if (isset($parameters['max_connections'])) {
+            if (!is_int($parameters['max_connections'])) {
+                throw new \InvalidArgumentException('`max_connections` must an be integer greater than zero.');
+            }
+            $this->maxConnections = $parameters['max_connections'];
+            unset($parameters['max_connections']);
+            if ($this->maxConnections < 1) {
+                throw new \InvalidArgumentException('`max_connections` must be greater than zero.');
+            }
+        }
+
+        $this->parameters = $parameters;
     }
 
     public function query($s)
     {
         return Observable::defer(function () use ($s) {
-            $conn = $this->getIdleConnection();
+            $conn = $this->getLeastBusyConnection();
 
             return $conn->query($s);
         });
@@ -50,10 +65,42 @@ class Client
     public function executeStatement(string $queryString, array $parameters = [])
     {
         return Observable::defer(function () use ($queryString, $parameters) {
-            $conn = $this->getIdleConnection();
+            $conn = $this->getLeastBusyConnection();
 
             return $conn->executeStatement($queryString, $parameters);
         });
+    }
+
+    private function getLeastBusyConnection() : Connection
+    {
+        if (count($this->connections) === 0) {
+            // try to spin up another connection to return
+            $conn = $this->createNewConnection();
+            if ($conn === null) {
+                throw new \Exception('There are no connections. Cannot find least busy one and could not create a new one.');
+            }
+
+            return $conn;
+        }
+
+        $min = $this->connections[0];
+
+        foreach ($this->connections as $connection) {
+            // if this connection is idle - just return it
+            if ($connection->getBacklogLength() === 0 && $connection->getState() === Connection::STATE_READY) {
+                return $connection;
+            }
+
+            if ($min->getBacklogLength() > $connection->getBacklogLength()) {
+                $min = $connection;
+            }
+        }
+
+        if (count($this->connections) < $this->maxConnections) {
+            return $this->createNewConnection();
+        }
+
+        return $min;
     }
 
     public function getIdleConnection(): Connection
@@ -68,6 +115,15 @@ class Client
             }
         }
 
+        if (count($this->connections) >= $this->maxConnections) {
+            return null;
+        }
+
+        return $this->createNewConnection();
+    }
+
+    private function createNewConnection()
+    {
         // no idle connections were found - spin up new one
         $connection = new Connection($this->parameters, $this->loop, $this->connector);
         if ($this->autoDisconnect) {
