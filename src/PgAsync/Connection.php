@@ -84,7 +84,7 @@ class Connection extends EventEmitter
     /** @var LoopInterface */
     private $loop;
 
-    /** @var \SplQueue */
+    /** @var CommandInterface[] */
     private $commandQueue;
 
     /** @var Message */
@@ -143,7 +143,7 @@ class Connection extends EventEmitter
 
         $this->parameters   = $parameters;
         $this->loop         = $loop;
-        $this->commandQueue = new \SplQueue();
+        $this->commandQueue = [];
         $this->queryState   = static::STATE_BUSY;
         $this->queryType    = static::QUERY_SIMPLE;
         $this->connStatus   = static::CONNECTION_NEEDED;
@@ -427,8 +427,8 @@ class Connection extends EventEmitter
     {
         $e = $e ?: new \Exception('unknown error');
 
-        while ($this->commandQueue->count() > 0) {
-            $c = $this->commandQueue->dequeue();
+        while (count($this->commandQueue) > 0) {
+            $c = array_shift($this->commandQueue);
             if ($c instanceof CommandInterface) {
                 $c->getSubject()->onError($e);
             }
@@ -437,11 +437,11 @@ class Connection extends EventEmitter
 
     public function processQueue()
     {
-        if ($this->commandQueue->count() === 0 && $this->queryState === static::STATE_READY && $this->auto_disconnect) {
-            $this->commandQueue->enqueue(new Terminate());
+        if (count($this->commandQueue) === 0 && $this->queryState === static::STATE_READY && $this->auto_disconnect) {
+            $this->commandQueue[] = new Terminate();
         }
 
-        if ($this->commandQueue->count() === 0) {
+        if (count($this->commandQueue) === 0) {
             return;
         }
 
@@ -454,9 +454,9 @@ class Connection extends EventEmitter
             return;
         }
 
-        while ($this->commandQueue->count() > 0 && $this->queryState === static::STATE_READY) {
+        while (count($this->commandQueue) > 0 && $this->queryState === static::STATE_READY) {
             /** @var CommandInterface $c */
-            $c = $this->commandQueue->dequeue();
+            $c = array_shift($this->commandQueue);
             $this->debug('Sending ' . get_class($c));
             if ($c instanceof Query) {
                 $this->debug('Sending simple query: ' . $c->getQueryString());
@@ -493,7 +493,7 @@ class Connection extends EventEmitter
                 }
 
                 $q = new Query($query);
-                $this->commandQueue->enqueue($q);
+                $this->commandQueue[] = $q;
 
                 $disposable = $q->getSubject()->subscribe($observer, $scheduler);
 
@@ -542,22 +542,22 @@ class Connection extends EventEmitter
                 $name = 'somestatement';
 
                 $close = new Close($name);
-                $this->commandQueue->enqueue($close);
+                $this->commandQueue[] = $close;
 
                 $prepare = new Parse($name, $queryString);
-                $this->commandQueue->enqueue($prepare);
+                $this->commandQueue[] = $prepare;
 
                 $bind = new Bind($parameters, $name);
-                $this->commandQueue->enqueue($bind);
+                $this->commandQueue[] = $bind;
 
                 $describe = new Describe();
-                $this->commandQueue->enqueue($describe);
+                $this->commandQueue[] = $describe;
 
                 $execute = new Execute();
-                $this->commandQueue->enqueue($execute);
+                $this->commandQueue[] = $execute;
 
                 $sync = new Sync($queryString);
-                $this->commandQueue->enqueue($sync);
+                $this->commandQueue[] = $sync;
 
                 $disposable = $sync->getSubject()->subscribe($observer, $scheduler);
 
@@ -591,7 +591,7 @@ class Connection extends EventEmitter
      */
     public function disconnect()
     {
-        $this->commandQueue->enqueue(new Terminate());
+        $this->commandQueue[] = new Terminate();
         $this->processQueue();
     }
 }
