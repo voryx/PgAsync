@@ -151,4 +151,44 @@ class ClientTest extends TestCase
         $client->closeNow();
         $this->getLoop()->run();
     }
+
+    public function testMaxConnections()
+    {
+        $client = new Client([
+            "user"            => $this->getDbUser(),
+            "database"        => $this::getDbName(),
+            "max_connections" => 3
+        ], $this->getLoop());
+
+        $value = null;
+
+        $testQuery = $client->query("SELECT pg_sleep(0.1)")->mapTo(1)
+            ->merge($client->query("SELECT pg_sleep(0.2)")->mapTo(2))
+            ->merge($client->query("SELECT pg_sleep(0.3)")->mapTo(3))
+            ->merge($client->query("SELECT pg_sleep(0.4)")->mapTo(4))
+            ->merge($client->query("SELECT pg_sleep(0.5)")->mapTo(5))
+            ->merge($client->query("SELECT pg_sleep(0.6)")->mapTo(6))
+            ->toArray();
+
+        $testQuery->subscribe(new \Rx\Observer\CallbackObserver(
+            function ($results) use (&$value) {
+                $value = $results;
+            },
+            function (\Throwable $e) use (&$error) {
+                $this->fail('Error while testing' . $e->getMessage());
+                $this->stopLoop();
+            },
+            function () {
+                $this->stopLoop();
+            }
+        ));
+
+        $this->runLoopWithTimeout(4);
+
+        $this->assertEquals([1,2,3,4,5,6], $value);
+        $this->assertEquals(3, $client->getConnectionCount());
+
+        $client->closeNow();
+        $this->getLoop()->run();
+    }
 }
