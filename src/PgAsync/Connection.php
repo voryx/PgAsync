@@ -593,7 +593,7 @@ class Connection extends EventEmitter
                         $this->cancelRequest();
                     }
                     $sync->cancel();
-                });;
+                });
             }
         );
     }
@@ -632,7 +632,7 @@ class Connection extends EventEmitter
                 $cancelRequest = new CancelRequest($this->backendKeyData->getPid(), $this->backendKeyData->getKey());
                 $conn->end($cancelRequest->encodedMessage());
             }, function (\Throwable $e) {
-                echo "Error connecting for cancellation... " . $e->getMessage() . "\n";
+                $this->debug("Error connecting for cancellation... " . $e->getMessage() . "\n");
             });
         }
     }
