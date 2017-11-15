@@ -3,7 +3,9 @@
 namespace PgAsync\Tests\Integration;
 
 use PgAsync\Connection;
+use PgAsync\ErrorException;
 use React\Dns\RecordNotFoundException;
+use Rx\Observable;
 use Rx\Observer\CallbackObserver;
 
 class ConnectionTest extends TestCase
@@ -195,6 +197,117 @@ class ConnectionTest extends TestCase
 
         $this->assertEquals([1,2], $value);
 
+        $this->getLoop()->run();
+    }
+
+    public function testCancellationUsingDispose()
+    {
+        $conn = new Connection([
+            "user"            => $this->getDbUser(),
+            "database"        => $this::getDbName()
+        ], $this->getLoop());
+
+        $testQuery = $conn->query("SELECT pg_sleep(10)")->mapTo(1);
+
+        $testQuery->takeUntil(Observable::timer(500))->subscribe(
+            function ($results) {
+                $this->fail('Expected no value');
+                $this->stopLoop();
+            },
+            function (\Throwable $e) {
+                $this->fail('Expected no error');
+                $this->stopLoop();
+            },
+            function () {
+                $this->stopLoop();
+            }
+        );
+
+        $this->runLoopWithTimeout(2);
+
+        $conn->disconnect();
+        $this->getLoop()->run();
+    }
+
+    public function testCancellationUsingInternalFunctions()
+    {
+        $conn = new Connection([
+            "user"            => $this->getDbUser(),
+            "database"        => $this::getDbName()
+        ], $this->getLoop());
+
+        $testQuery = $conn->query("SELECT pg_sleep(10)")->mapTo(1);
+
+        $error = null;
+
+        $testQuery->subscribe(
+            function ($results) {
+                $this->fail('Expected no value');
+                $this->stopLoop();
+            },
+            function (\Throwable $e) use (&$error) {
+                $error = $e;
+                $this->stopLoop();
+            },
+            function () {
+                $this->fail('Expected no completion');
+                $this->stopLoop();
+            }
+        );
+
+        $this->getLoop()->addTimer(0.5, function () use ($conn) {
+            $r = new \ReflectionClass($conn);
+            $m = $r->getMethod('cancelRequest');
+            $m->setAccessible(true);
+            $m->invoke($conn);
+            $m->setAccessible(false);
+        });
+
+        $this->runLoopWithTimeout(2);
+
+        $this->assertInstanceOf(ErrorException::class, $error);
+        $this->assertStringStartsWith('ERROR: canceling statement due to user request while executing', $error->getMessage());
+
+        $conn->disconnect();
+        $this->getLoop()->run();
+    }
+
+    public function testCancellationOfNonActiveQuery()
+    {
+        $conn = new Connection([
+            "user"            => $this->getDbUser(),
+            "database"        => $this::getDbName()
+        ], $this->getLoop());
+
+        $testQuery = $conn->query("SELECT pg_sleep(1)")->mapTo(1)
+            ->merge($conn->query('SELECT pg_sleep(1)')
+                ->mapTo(2)
+                ->takeUntil(Observable::timer(250))
+            )
+            ->merge($conn->query('SELECT pg_sleep(1)')->mapTo(3))
+            ->toArray();
+
+        $value = null;
+
+        $testQuery->subscribe(
+            function ($results) use (&$value) {
+                $value = $results;
+                $this->stopLoop();
+            },
+            function (\Throwable $e) {
+                $this->fail('Expected no error' . $e->getMessage());
+                $this->stopLoop();
+            },
+            function () {
+                $this->stopLoop();
+            }
+        );
+
+        $this->runLoopWithTimeout(15);
+
+        $this->assertEquals([1,3], $value);
+
+        $conn->disconnect();
         $this->getLoop()->run();
     }
 }

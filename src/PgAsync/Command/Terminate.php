@@ -6,11 +6,6 @@ class Terminate implements CommandInterface
 {
     use CommandTrait;
 
-    public function __construct()
-    {
-        $this->getSubject();
-    }
-
     public function encodedMessage(): string
     {
         return "X\0\0\0\x04";

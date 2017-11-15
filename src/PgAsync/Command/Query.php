@@ -3,7 +3,7 @@
 namespace PgAsync\Command;
 
 use PgAsync\Message\Message;
-use Rx\Subject\Subject;
+use Rx\ObserverInterface;
 
 class Query implements CommandInterface
 {
@@ -11,11 +11,11 @@ class Query implements CommandInterface
 
     protected $queryString = "";
 
-    public function __construct(string $queryString)
+    public function __construct(string $queryString, ObserverInterface $observer)
     {
         $this->queryString = $queryString;
 
-        $this->subject = new Subject();
+        $this->observer = $observer;
     }
 
     public function encodedMessage(): string

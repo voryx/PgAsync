@@ -2,31 +2,50 @@
 
 namespace PgAsync\Command;
 
-use Rx\Subject\Subject;
+use Rx\ObserverInterface;
 
 trait CommandTrait
 {
-    private $subject;
+    /** @var ObserverInterface */
+    protected $observer;
+
+    protected $active = true;
 
     public function complete()
     {
-        $this->getSubject()->onCompleted();
+        $this->active = false;
+        if (!$this->observer instanceof ObserverInterface) {
+            throw new \Exception('Observer not set on command.');
+        }
+        $this->observer->onCompleted();
     }
 
-    public function error(\Exception $exception = null)
+    public function error(\Throwable $exception = null)
     {
-        if (!($exception instanceof \Exception)) {
-            $exception = new \Exception('Unknown Error');
+        $this->active = false;
+        if (!$this->observer instanceof ObserverInterface) {
+            throw new \Exception('Observer not set on command.');
         }
-
-        $this->getSubject()->onError($exception);
+        $this->observer->onError($exception);
     }
 
-    public function getSubject(): Subject
-    {
-        if ($this->subject === null) {
-            $this->subject = new Subject();
+    public function next($value) {
+        if (!$this->active) {
+            return;
         }
-        return $this->subject;
+        if (!$this->observer instanceof ObserverInterface) {
+            throw new \Exception('Observer not set on command.');
+        }
+        $this->observer->onNext($value);
+    }
+
+    public function isActive(): bool
+    {
+        return $this->active;
+    }
+
+    public function cancel()
+    {
+        $this->active = false;
     }
 }

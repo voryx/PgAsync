@@ -4,12 +4,20 @@ namespace PgAsync\Message;
 
 class BackendKeyData extends Message
 {
+    private $pid;
+    private $key;
+
     /**
      * @inheritDoc
      */
     public function parseMessage(string $rawMessage)
     {
-        // TODO - this is unsupported right now
+        if (13 !== strlen($rawMessage)) {
+            throw new \UnderflowException();
+        }
+
+        $this->pid = unpack('N', substr($rawMessage, 5, 4))[1];
+        $this->key = unpack('N', substr($rawMessage, 9, 4))[1];
     }
 
     /**
@@ -18,5 +26,15 @@ class BackendKeyData extends Message
     public static function getMessageIdentifier(): string
     {
         return 'K';
+    }
+
+    public function getPid() : int
+    {
+        return $this->pid;
+    }
+
+    public function getKey() : int
+    {
+        return $this->key;
     }
 }
