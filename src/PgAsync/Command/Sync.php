@@ -2,16 +2,18 @@
 
 namespace PgAsync\Command;
 
+use Rx\ObserverInterface;
+
 class Sync implements CommandInterface
 {
     use CommandTrait;
 
     private $description;
 
-    public function __construct(string $description = "")
+    public function __construct(string $description = "", ObserverInterface $observer)
     {
         $this->description = $description;
-        $this->getSubject();
+        $this->observer    = $observer;
     }
 
     public function encodedMessage(): string

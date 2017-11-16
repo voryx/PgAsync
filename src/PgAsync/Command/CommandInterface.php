@@ -2,17 +2,19 @@
 
 namespace PgAsync\Command;
 
-use Rx\Subject\Subject;
-
 interface CommandInterface
 {
     public function encodedMessage(): string;
 
     public function complete();
 
-    public function error();
+    public function error(\Throwable $throwable);
+
+    public function next($value);
+
+    public function isActive(): bool;
+
+    public function cancel();
 
     public function shouldWaitForComplete(): bool;
-
-    public function getSubject(): Subject;
 }

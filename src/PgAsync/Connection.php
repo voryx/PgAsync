@@ -4,6 +4,7 @@ namespace PgAsync;
 
 use Evenement\EventEmitter;
 use PgAsync\Command\Bind;
+use PgAsync\Command\CancelRequest;
 use PgAsync\Command\Close;
 use PgAsync\Command\Describe;
 use PgAsync\Command\Execute;
@@ -28,12 +29,11 @@ use PgAsync\Command\Query;
 use PgAsync\Message\ReadyForQuery;
 use PgAsync\Message\RowDescription;
 use PgAsync\Command\StartupMessage;
-use React\Dns\Resolver\Factory;
-use React\Dns\Resolver\Resolver;
 use React\EventLoop\LoopInterface;
 use React\Socket\Connector;
 use React\Socket\ConnectorInterface;
 use React\Stream\DuplexStreamInterface;
+use Rx\Disposable\CallbackDisposable;
 use Rx\Disposable\EmptyDisposable;
 use Rx\Observable;
 use Rx\Observable\AnonymousObservable;
@@ -102,6 +102,12 @@ class Connection extends EventEmitter
     /** @var string */
     private $lastError;
 
+    /** @var BackendKeyData */
+    private $backendKeyData;
+
+    /** @var string */
+    private $uri;
+
     /**
      * Can be 'I' for Idle, 'T' if in transactions block
      * or 'E' if in failed transaction block (queries will fail until end of trans)
@@ -148,6 +154,7 @@ class Connection extends EventEmitter
         $this->queryType    = static::QUERY_SIMPLE;
         $this->connStatus   = static::CONNECTION_NEEDED;
         $this->socket       = $connector ?: new Connector($loop);
+        $this->uri          = 'tcp://' . $this->parameters['host'] . ':' . $this->parameters['port'];
     }
 
     private function start()
@@ -158,9 +165,7 @@ class Connection extends EventEmitter
 
         $this->connStatus = static::CONNECTION_STARTED;
 
-        $uri = 'tcp://' . $this->parameters['host'] . ':' . $this->parameters['port'];
-
-        $this->socket->connect($uri)->then(
+        $this->socket->connect($this->uri)->then(
             function (DuplexStreamInterface $stream) {
                 $this->stream     = $stream;
                 $this->connStatus = static::CONNECTION_MADE;
@@ -320,7 +325,7 @@ class Connection extends EventEmitter
                 }
             }
 
-            $this->currentCommand->getSubject()->onNext($row);
+            $this->currentCommand->next($row);
         }
     }
 
@@ -359,12 +364,15 @@ class Connection extends EventEmitter
 
     private function handleBackendKeyData(BackendKeyData $message)
     {
+        $this->backendKeyData = $message;
     }
 
     private function handleCommandComplete(CommandComplete $message)
     {
         if ($this->currentCommand instanceof CommandInterface) {
-            $this->currentCommand->getSubject()->onCompleted();
+            $command = $this->currentCommand;
+            $this->currentCommand = null;
+            $command->complete();
         }
         $this->debug('Command complete.');
     }
@@ -405,7 +413,7 @@ class Connection extends EventEmitter
                     'query_string' => $this->currentCommand->getQueryString()
                 ];
             }
-            $this->currentCommand->getSubject()->onError(new ErrorException($message, $extraInfo));
+            $this->currentCommand->error(new ErrorException($message, $extraInfo));
             $this->currentCommand = null;
         }
     }
@@ -443,7 +451,7 @@ class Connection extends EventEmitter
         while (count($this->commandQueue) > 0) {
             $c = array_shift($this->commandQueue);
             if ($c instanceof CommandInterface) {
-                $c->getSubject()->onError($e);
+                $c->error($e);
             }
         }
     }
@@ -470,6 +478,9 @@ class Connection extends EventEmitter
         while (count($this->commandQueue) > 0 && $this->queryState === static::STATE_READY) {
             /** @var CommandInterface $c */
             $c = array_shift($this->commandQueue);
+            if (!$c->isActive()) {
+                continue;
+            }
             $this->debug('Sending ' . get_class($c));
             if ($c instanceof Query) {
                 $this->debug('Sending simple query: ' . $c->getQueryString());
@@ -505,14 +516,17 @@ class Connection extends EventEmitter
                     return new EmptyDisposable();
                 }
 
-                $q = new Query($query);
+                $q = new Query($query, $observer);
                 $this->commandQueue[] = $q;
-
-                $disposable = $q->getSubject()->subscribe($observer, $scheduler);
 
                 $this->processQueue();
 
-                return $disposable;
+                return new CallbackDisposable(function () use ($q) {
+                        if ($this->currentCommand === $q && $q->isActive()) {
+                            $this->cancelRequest();
+                        }
+                        $q->cancel();
+                    });
             }
         );
 
@@ -569,14 +583,17 @@ class Connection extends EventEmitter
                 $execute = new Execute();
                 $this->commandQueue[] = $execute;
 
-                $sync = new Sync($queryString);
+                $sync = new Sync($queryString, $observer);
                 $this->commandQueue[] = $sync;
-
-                $disposable = $sync->getSubject()->subscribe($observer, $scheduler);
 
                 $this->processQueue();
 
-                return $disposable;
+                return new CallbackDisposable(function () use ($sync) {
+                    if ($this->currentCommand === $sync && $sync->isActive()) {
+                        $this->cancelRequest();
+                    }
+                    $sync->cancel();
+                });
             }
         );
     }
@@ -606,5 +623,17 @@ class Connection extends EventEmitter
     {
         $this->commandQueue[] = new Terminate();
         $this->processQueue();
+    }
+
+    private function cancelRequest()
+    {
+        if ($this->currentCommand !== null) {
+            $this->socket->connect($this->uri)->then(function (DuplexStreamInterface $conn) {
+                $cancelRequest = new CancelRequest($this->backendKeyData->getPid(), $this->backendKeyData->getKey());
+                $conn->end($cancelRequest->encodedMessage());
+            }, function (\Throwable $e) {
+                $this->debug("Error connecting for cancellation... " . $e->getMessage() . "\n");
+            });
+        }
     }
 }
