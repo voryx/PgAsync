@@ -33,7 +33,7 @@
     }
   },
   "require": {
-    "voryx/event-loop": "^2.0.2",
+    "voryx/event-loop": "^3.0 || ^2.0.2",
     "reactivex/rxphp": "^2.0",
     "react/socket": "^1.0 || ^0.8 || ^0.7",
     "evenement/evenement": "^2.0 | ^3.0"

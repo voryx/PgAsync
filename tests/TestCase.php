@@ -38,7 +38,7 @@ class TestCase extends \PHPUnit_Framework_TestCase
     public static function cancelCurrentTimeoutTimer()
     {
         if (static::$timeoutTimer !== null) {
-            static::$timeoutTimer->cancel();
+            static::getLoop()->cancelTimer(static::$timeoutTimer);
             static::$timeoutTimer = null;
         }
     }
