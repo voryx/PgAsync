@@ -20,7 +20,7 @@ $client = new PgAsync\Client([
     "database" => "matt"
 ]);
 
-$client->query('SELECT * FROM channel')->subscribe(new \Rx\Observer\CallbackObserver(
+$client->query('SELECT * FROM channel')->subscribe(
     function ($row) {
         var_dump($row);
     },
@@ -30,7 +30,7 @@ $client->query('SELECT * FROM channel')->subscribe(new \Rx\Observer\CallbackObse
     function () {
         echo "Complete.\n";
     }
-));
+);
 
 
 ```
@@ -48,7 +48,7 @@ $client = new PgAsync\Client([
 ]);
 
 $client->executeStatement('SELECT * FROM channel WHERE id = $1', ['5'])
-    ->subscribe(new \Rx\Observer\CallbackObserver(
+    ->subscribe(
         function ($row) {
             var_dump($row);
         },
@@ -58,7 +58,7 @@ $client->executeStatement('SELECT * FROM channel WHERE id = $1', ['5'])
         function () {
             echo "Complete.\n";
         }
-    ));
+    );
 
 ```
 
@@ -66,7 +66,7 @@ $client->executeStatement('SELECT * FROM channel WHERE id = $1', ['5'])
 With [composer](https://getcomposer.org/) install into you project with:
 
 Install pgasync:
-```composer require voryx/pgasync:dev-master```
+```composer require voryx/pgasync```
 
 ## What it can do
 - Run queries (CREATE, UPDATE, INSERT, SELECT, DELETE)
