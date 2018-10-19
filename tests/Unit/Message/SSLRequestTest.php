@@ -1,6 +1,8 @@
 <?php
 
-class SSLRequestTest extends PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+class SSLRequestTest extends TestCase
 {
     public function test()
     {

@@ -1,6 +1,8 @@
 <?php
 
-class StartupMessageTest extends PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+class StartupMessageTest extends TestCase
 {
     public function test()
     {
