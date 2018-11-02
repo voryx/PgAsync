@@ -1,6 +1,8 @@
 <?php
 
-class ParseTest extends PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+class ParseTest extends TestCase
 {
     /**
      * Still working on this

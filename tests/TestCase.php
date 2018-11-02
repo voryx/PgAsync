@@ -6,8 +6,9 @@ use EventLoop\EventLoop;
 use React\EventLoop\Factory;
 use React\EventLoop\LoopInterface;
 use React\EventLoop\Timer\Timer;
+use PHPUnit\Framework\TestCase as BaseTestCase;
 
-class TestCase extends \PHPUnit_Framework_TestCase
+class TestCase extends BaseTestCase
 {
     const DBNAME = 'pgasync_test';
 
