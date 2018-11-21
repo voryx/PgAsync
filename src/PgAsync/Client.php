@@ -2,9 +2,11 @@
 
 namespace PgAsync;
 
+use PgAsync\Message\NotificationResponse;
 use React\EventLoop\LoopInterface;
 use React\Socket\ConnectorInterface;
 use Rx\Observable;
+use Rx\Subject\Subject;
 
 class Client
 {
@@ -29,6 +31,12 @@ class Client
 
     /** @var int */
     private $maxConnections = 5;
+
+    /** @var Subject[] */
+    private $listeners = [];
+
+    /** @var Connection */
+    private $listenConnection;
 
     public function __construct(array $parameters, LoopInterface $loop = null, ConnectorInterface $connector = null)
     {
@@ -157,5 +165,59 @@ class Client
         foreach ($this->connections as $connection) {
             $connection->disconnect();
         }
+    }
+
+    public function listen($channel)
+    {
+        if (!isset($this->listeners[$channel])) {
+            $subscriberCount = 0;
+            $listenerDisposable = null;
+            $channelSubject = new Subject();
+            $this->listeners[$channel] = Observable::defer(function () use ($channel, &$subscriberCount, &$listenerDisposable, $channelSubject) {
+                    $unlisten = function () use ($channel, &$subscriberCount, &$listenerDisposable, $channelSubject) {
+                        $subscriberCount--;
+                        if ($subscriberCount !== 0) {
+                            return;
+                        }
+                        $this->listenConnection->query("UNLISTEN " . $channel)
+                            ->subscribe();
+
+                        $listenerDisposable->dispose();
+                        $listenerDisposable = null;
+                        unset($this->listeners[$channel]);
+
+                        if (empty($this->listeners)) {
+                            $this->listenConnection->disconnect();
+                            $this->listenConnection = null;
+                        }
+                    };
+
+                    return Observable::start(function () use ($channel, &$listenerDisposable, &$subscriberCount, $channelSubject) {
+                        $subscriberCount++;
+                        if ($this->listenConnection === null) {
+                            $this->listenConnection = $this->createNewConnection();
+                        }
+
+                        if ($this->listenConnection === null) {
+                            throw new \Exception('Could not get new connection to listen on.');
+                        }
+
+                        if ($listenerDisposable !== null) {
+                            return;
+                        }
+                        $listenerDisposable =
+                            $this->listenConnection->query("LISTEN " . $channel)
+                                ->merge($this->listenConnection->notifications())
+                                ->filter(function (NotificationResponse $message) use ($channel) {
+                                    return $message->getChannelName() === $channel;
+                                })
+                                ->subscribe($channelSubject);
+                    })->skip(1)
+                        ->merge($channelSubject)
+                        ->finally($unlisten);
+                });
+        }
+
+        return $this->listeners[$channel];
     }
 }
