@@ -73,9 +73,11 @@ $client = new PgAsync\Client([
 ]);
 
 $client->listen('some_channel')
-    ->subscriber(function (\PgAsync\Message\NotificationResponse $message) {
+    ->subscribe(function (\PgAsync\Message\NotificationResponse $message) {
         echo $message->getChannelName() . ': ' . $message->getPayload() . "\n";
     });
+    
+$client->query("NOTIFY some_channel, 'Hello World'")->subscribe();
 ```
 
 ## Install
