@@ -68,8 +68,7 @@ $client = new PgAsync\Client([
      "host" => "127.0.0.1",
      "port" => "5432",
      "user"     => "matt",
-     "database" => "matt",
-     "auto_disconnect" => true //This option will force the client to disconnect as soon as it completes.  The connection will not be returned to the connection pool.
+     "database" => "matt"
 ]);
 
 $client->listen('some_channel')
