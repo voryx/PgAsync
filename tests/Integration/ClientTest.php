@@ -3,7 +3,7 @@
 namespace PgAsync\Tests\Integration;
 
 use PgAsync\Client;
-use React\EventLoop\Timer\Timer;
+use PgAsync\Message\NotificationResponse;
 use Rx\Observable;
 use Rx\Observer\CallbackObserver;
 
@@ -187,6 +187,48 @@ class ClientTest extends TestCase
 
         $this->assertEquals([1,2,3,4,5,6], $value);
         $this->assertEquals(3, $client->getConnectionCount());
+
+        $client->closeNow();
+        $this->getLoop()->run();
+    }
+
+    public function testListen()
+    {
+        $client = new Client([
+            "user"            => $this->getDbUser(),
+            "database"        => $this::getDbName(),
+        ], $this->getLoop());
+
+        $testQuery = $client->listen('some_channel')
+            ->merge($client->listen('some_channel')->take(1))
+            ->take(3)
+            ->concat($client->listen('some_channel')->take(1));
+
+        $values = [];
+
+        $testQuery->subscribe(
+            function (NotificationResponse $results) use (&$values) {
+                $values[] = $results->getPayload();
+            },
+            function (\Throwable $e) use (&$error) {
+                $this->fail('Error while testing: ' . $e->getMessage());
+                $this->stopLoop();
+            },
+            function () {
+                $this->stopLoop();
+            }
+        );
+
+        Observable::interval(300)
+            ->take(3)
+            ->flatMap(function ($x) use ($client) {
+                return $client->executeStatement("NOTIFY some_channel, 'Hello" . $x . "'");
+            })
+            ->subscribe();
+
+        $this->runLoopWithTimeout(4);
+
+        $this->assertEquals(['Hello0', 'Hello0', 'Hello1', 'Hello2'], $values);
 
         $client->closeNow();
         $this->getLoop()->run();

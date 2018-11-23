@@ -62,6 +62,23 @@ $client->executeStatement('SELECT * FROM channel WHERE id = $1', ['5'])
 
 ```
 
+## Example - LISTEN/NOTIFY
+```php
+$client = new PgAsync\Client([
+     "host" => "127.0.0.1",
+     "port" => "5432",
+     "user"     => "matt",
+     "database" => "matt"
+]);
+
+$client->listen('some_channel')
+    ->subscribe(function (\PgAsync\Message\NotificationResponse $message) {
+        echo $message->getChannelName() . ': ' . $message->getPayload() . "\n";
+    });
+    
+$client->query("NOTIFY some_channel, 'Hello World'")->subscribe();
+```
+
 ## Install
 With [composer](https://getcomposer.org/) install into you project with:
 

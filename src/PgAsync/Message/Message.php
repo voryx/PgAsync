@@ -52,6 +52,8 @@ abstract class Message implements ParserInterface
                 return new ReadyForQuery();
             case 'T':
                 return new RowDescription();
+            case NotificationResponse::getMessageIdentifier():
+                return new NotificationResponse();
         }
 
         return new Discard();

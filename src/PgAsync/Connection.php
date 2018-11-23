@@ -23,6 +23,7 @@ use PgAsync\Message\EmptyQueryResponse;
 use PgAsync\Message\ErrorResponse;
 use PgAsync\Message\Message;
 use PgAsync\Message\NoticeResponse;
+use PgAsync\Message\NotificationResponse;
 use PgAsync\Message\ParameterStatus;
 use PgAsync\Message\ParseComplete;
 use PgAsync\Command\Query;
@@ -39,6 +40,7 @@ use Rx\Observable;
 use Rx\Observable\AnonymousObservable;
 use Rx\ObserverInterface;
 use Rx\SchedulerInterface;
+use Rx\Subject\Subject;
 
 class Connection extends EventEmitter
 {
@@ -108,6 +110,9 @@ class Connection extends EventEmitter
     /** @var string */
     private $uri;
 
+    /** @var Subject */
+    private $notificationSubject;
+
     /**
      * Can be 'I' for Idle, 'T' if in transactions block
      * or 'E' if in failed transaction block (queries will fail until end of trans)
@@ -147,14 +152,15 @@ class Connection extends EventEmitter
             unset($parameters['auto_disconnect']);
         }
 
-        $this->parameters   = $parameters;
-        $this->loop         = $loop;
-        $this->commandQueue = [];
-        $this->queryState   = static::STATE_BUSY;
-        $this->queryType    = static::QUERY_SIMPLE;
-        $this->connStatus   = static::CONNECTION_NEEDED;
-        $this->socket       = $connector ?: new Connector($loop);
-        $this->uri          = 'tcp://' . $this->parameters['host'] . ':' . $this->parameters['port'];
+        $this->parameters          = $parameters;
+        $this->loop                = $loop;
+        $this->commandQueue        = [];
+        $this->queryState          = static::STATE_BUSY;
+        $this->queryType           = static::QUERY_SIMPLE;
+        $this->connStatus          = static::CONNECTION_NEEDED;
+        $this->socket              = $connector ?: new Connector($loop);
+        $this->uri                 = 'tcp://' . $this->parameters['host'] . ':' . $this->parameters['port'];
+        $this->notificationSubject = new Subject();
     }
 
     private function start()
@@ -297,7 +303,14 @@ class Connection extends EventEmitter
             $this->handleReadyForQuery($message);
         } elseif ($message instanceof RowDescription) {
             $this->handleRowDescription($message);
+        } elseif ($message instanceof NotificationResponse) {
+            $this->handleNotificationResponse($message);
         }
+    }
+
+    private function handleNotificationResponse(NotificationResponse $message)
+    {
+        $this->notificationSubject->onNext($message);
     }
 
     private function handleDataRow(DataRow $dataRow)
@@ -447,6 +460,8 @@ class Connection extends EventEmitter
     private function failAllCommandsWith(\Throwable $e = null)
     {
         $e = $e ?: new \Exception('unknown error');
+
+        $this->notificationSubject->onError($e);
 
         while (count($this->commandQueue) > 0) {
             $c = array_shift($this->commandQueue);
@@ -635,5 +650,9 @@ class Connection extends EventEmitter
                 $this->debug("Error connecting for cancellation... " . $e->getMessage() . "\n");
             });
         }
+    }
+
+    public function notifications() {
+        return $this->notificationSubject->asObservable();
     }
 }

@@ -2,9 +2,11 @@
 
 namespace PgAsync;
 
+use PgAsync\Message\NotificationResponse;
 use React\EventLoop\LoopInterface;
 use React\Socket\ConnectorInterface;
 use Rx\Observable;
+use Rx\Subject\Subject;
 
 class Client
 {
@@ -30,10 +32,16 @@ class Client
     /** @var int */
     private $maxConnections = 5;
 
+    /** @var Subject[] */
+    private $listeners = [];
+
+    /** @var Connection */
+    private $listenConnection;
+
     public function __construct(array $parameters, LoopInterface $loop = null, ConnectorInterface $connector = null)
     {
-        $this->loop       = $loop ?: \EventLoop\getLoop();
-        $this->connector  = $connector;
+        $this->loop      = $loop ?: \EventLoop\getLoop();
+        $this->connector = $connector;
 
         if (isset($parameters['auto_disconnect'])) {
             $this->autoDisconnect = $parameters['auto_disconnect'];
@@ -71,7 +79,7 @@ class Client
         });
     }
 
-    private function getLeastBusyConnection() : Connection
+    private function getLeastBusyConnection(): Connection
     {
         if (count($this->connections) === 0) {
             // try to spin up another connection to return
@@ -157,5 +165,43 @@ class Client
         foreach ($this->connections as $connection) {
             $connection->disconnect();
         }
+    }
+
+    public function listen(string $channel): Observable
+    {
+        if (isset($this->listeners[$channel])) {
+            return $this->listeners[$channel];
+        }
+
+        $unlisten = function () use ($channel) {
+            $this->listenConnection->query('UNLISTEN ' . $channel)->subscribe();
+
+            unset($this->listeners[$channel]);
+
+            if (empty($this->listeners)) {
+                $this->listenConnection->disconnect();
+                $this->listenConnection = null;
+            }
+        };
+
+        $this->listeners[$channel] = Observable::defer(function () use ($channel) {
+            if ($this->listenConnection === null) {
+                $this->listenConnection = $this->createNewConnection();
+            }
+
+            if ($this->listenConnection === null) {
+                throw new \Exception('Could not get new connection to listen on.');
+            }
+
+            return $this->listenConnection->query('LISTEN ' . $channel)
+                ->merge($this->listenConnection->notifications())
+                ->filter(function (NotificationResponse $message) use ($channel) {
+                    return $message->getChannelName() === $channel;
+                });
+        })
+            ->finally($unlisten)
+            ->share();
+
+        return $this->listeners[$channel];
     }
 }
