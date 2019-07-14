@@ -23,7 +23,7 @@ class ClientTest extends TestCase
             ->method('query')
             ->willReturn($deferred->promise());
 
-        $resolver = new Resolver('1.2.3.4', $executor);
+        $resolver = new Resolver($executor);
 
         $conn = new Client([
             "database" => $this->getDbName(),
@@ -62,7 +62,7 @@ class ClientTest extends TestCase
             ->method('query')
             ->willReturn(new RejectedPromise(new React\Dns\RecordNotFoundException()));
 
-        $resolver = new Resolver('1.2.3.4', $executor);
+        $resolver = new Resolver($executor);
 
         $conn = new Client([
             "database" => $this->getDbName(),
