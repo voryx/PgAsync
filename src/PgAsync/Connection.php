@@ -152,6 +152,10 @@ class Connection extends EventEmitter
             unset($parameters['auto_disconnect']);
         }
 
+        if (!isset($parameters['application_name'])) {
+            $parameters['application_name'] = 'pgasync';
+        }
+
         $this->parameters          = $parameters;
         $this->loop                = $loop;
         $this->commandQueue        = [];
