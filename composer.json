@@ -40,6 +40,6 @@
   },
   "require-dev": {
     "phpunit/phpunit": "^5.7",
-    "react/dns": "^0.4"
+    "react/dns": "^1.0"
   }
 }
