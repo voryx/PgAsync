@@ -313,4 +313,71 @@ class ConnectionTest extends TestCase
         $conn->disconnect();
         $this->getLoop()->run();
     }
+
+    public function testCancellationWithImmediateQueryQueuedUp() {
+        $conn = new Connection([
+            "user"            => $this->getDbUser(),
+            "database"        => $this::getDbName()
+        ], $this->getLoop());
+
+        $q1 = $conn->query("SELECT * FROM generate_series(1,4)");
+        $q2 = $conn->query("SELECT pg_sleep(10)");
+
+        $testQuery = $q1->merge($q2)->take(1);
+
+        $value = null;
+
+        $testQuery->subscribe(
+            function ($results) use (&$value) {
+                $value = $results;
+                $this->stopLoop();
+            },
+            function (\Throwable $e) {
+                $this->fail('Expected no error' . $e->getMessage());
+                $this->stopLoop();
+            },
+            function () {
+                $this->stopLoop();
+            }
+        );
+
+        $this->runLoopWithTimeout(15);
+
+        $this->assertEquals(['generate_series' => '1'], $value);
+
+        $conn->disconnect();
+        $this->getLoop()->run();
+    }
+
+    public function testArrayInParameters() {
+        $conn = new Connection([
+            "user"            => $this->getDbUser(),
+            "database"        => $this::getDbName()
+        ], $this->getLoop());
+
+        $testQuery = $conn->executeStatement("SELECT * FROM generate_series(1,4) WHERE generate_series = ANY($1)", ['{2, 3}']);
+
+        $value = [];
+
+        $testQuery->subscribe(
+            function ($results) use (&$value) {
+                $value[] = $results;
+                $this->stopLoop();
+            },
+            function (\Throwable $e) {
+                $this->fail('Expected no error' . $e->getMessage());
+                $this->stopLoop();
+            },
+            function () {
+                $this->stopLoop();
+            }
+        );
+
+        $this->runLoopWithTimeout(15);
+
+        $this->assertEquals([['generate_series' => 2], ['generate_series' => 3]], $value);
+
+        $conn->disconnect();
+        $this->getLoop()->run();
+    }
 }
