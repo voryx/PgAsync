@@ -20,11 +20,11 @@ trait CommandTrait
         $this->observer->onCompleted();
     }
 
-    public function error(\Throwable $exception = null)
+    public function error(\Throwable $exception)
     {
         $this->active = false;
         if (!$this->observer instanceof ObserverInterface) {
-            throw new \Exception('Observer not set on command.');
+            throw $exception;
         }
         $this->observer->onError($exception);
     }
