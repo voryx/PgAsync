@@ -141,9 +141,9 @@ class Client
         $this->connections[] = $connection;
 
         $connection->on('close', function () use ($connection) {
-            $this->connections = array_filter($this->connections, function ($c) use ($connection) {
+            $this->connections = array_values(array_filter($this->connections, function ($c) use ($connection) {
                 return $connection !== $c;
-            });
+            }));
         });
 
         return $connection;
