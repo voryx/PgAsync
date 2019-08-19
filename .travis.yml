@@ -7,8 +7,8 @@ php:
   - 7.2
   - 7.3
 
-addons:
-  postgresql: "9.3"
+services:
+  - postgresql
 
 install:
   - composer install
