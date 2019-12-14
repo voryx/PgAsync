@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<phpunit
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="./vendor/phpunit/phpunit/phpunit.xsd"
         backupGlobals="false"
         backupStaticAttributes="false"
         colors="true"
@@ -8,7 +9,6 @@
         convertWarningsToExceptions="true"
         processIsolation="false"
         stopOnFailure="false"
-        syntaxCheck="false"
         bootstrap="tests/bootstrap.php">
     <testsuites>
         <testsuite name="PgAsync Tests">

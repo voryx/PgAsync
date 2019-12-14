@@ -205,31 +205,44 @@ class ConnectionTest extends TestCase
 
     public function testCancellationUsingDispose()
     {
+        $this->markTestSkipped('We have disabled cancellation for the time being.');
         $conn = new Connection([
             "user"            => $this->getDbUser(),
-            "database"        => $this::getDbName()
+            "database"        => $this::getDbName(),
+            "auto_disconnect" => true
         ], $this->getLoop());
 
-        $testQuery = $conn->query("SELECT pg_sleep(10)")->mapTo(1);
+        $disposed = false;
 
-        $testQuery->takeUntil(Observable::timer(500))->subscribe(
+        $testQuery = $conn->query("SELECT pg_sleep(10)")
+            ->mapTo(1)
+            ->finally(function () use (&$disposed) {
+                $disposed = true;
+            });
+
+        //$disposable = $testQuery->takeUntil(Observable::timer(500))->subscribe(
+        $disposable = $testQuery->subscribe(
             function ($results) {
-                $this->fail('Expected no value');
                 $this->stopLoop();
+                $this->fail('Expected no value');
             },
             function (\Throwable $e) {
-                $this->fail('Expected no error');
                 $this->stopLoop();
+                $this->fail('Expected no error');
             },
             function () {
                 $this->stopLoop();
+                $this->fail('Expected no completion');
             }
         );
 
+        $this->getLoop()->addTimer(500, function () use ($disposable) {
+            $disposable->dispose();
+        });
+
         $this->runLoopWithTimeout(2);
 
-        $conn->disconnect();
-        $this->getLoop()->run();
+        $this->assertTrue($disposed);
     }
 
     public function testCancellationUsingInternalFunctions()

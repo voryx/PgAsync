@@ -129,3 +129,17 @@ $insert
     ->concat($select)
     ->subscribe(...);
 ```
+
+## Testing
+
+We use docker to run a postgresql instance for testing. To run locally,
+just install docker and run the following command from the project root:
+```bash
+docker-compose -f docker/docker-compose.yml up -d
+```
+If you need to reset the database, just stop the docker instance and delete
+the `docker/database` directory. Restart the docker with the above command and it will
+initialize the database again.
+
+The tests do not change the ending structure of the database, so you should not
+normally need to do this.

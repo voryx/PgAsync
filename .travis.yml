@@ -6,12 +6,17 @@ php:
   - 7.1
   - 7.2
   - 7.3
+  - 7.4
 
 services:
-  - postgresql
+  - docker
 
 install:
   - composer install
 
+before_script:
+  - docker-compose -f docker/docker-compose.yml up -d
+  - sh docker/waitForPostgres.sh
+
 script:
-  - vendor/bin/phpunit
+  - vendor/bin/phpunit --testdox
