@@ -18,7 +18,7 @@ class TestCase extends BaseTestCase
     /** @var Timer */
     public static $timeoutTimer;
 
-    public static $dbUser = "";
+    public static $dbUser = 'pgasync';
 
     public static function getLoop()
     {
