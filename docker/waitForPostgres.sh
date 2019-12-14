@@ -14,7 +14,7 @@ while [ "$ROW_COUNT" -ne 1 ]; do
   sleep 5
   TRY_COUNT=$(($TRY_COUNT+1))
   echo "Attempt $TRY_COUNT..."
-  if ! ROW_COUNT=$(docker exec docker_pgasync-postgres_1 psql -U postgres pgasync_test -c "select count(*) from test_bool_param" -A -t); then
+  if ! ROW_COUNT=$(docker exec pgasync-postgres psql -U postgres pgasync_test -c "select count(*) from test_bool_param" -A -t); then
     ROW_COUNT=0
   fi
 done

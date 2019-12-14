@@ -2,6 +2,7 @@ version: '3.7'
 
 services:
   pgasync-postgres:
+    container_name: pgasync-postgres
     image: postgres:11
     environment:
       - PGDATA=/database
