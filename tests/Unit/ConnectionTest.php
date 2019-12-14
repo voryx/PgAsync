@@ -5,27 +5,21 @@ use PgAsync\Tests\TestCase;
 
 class ConnectionTest extends TestCase
 {
-    /**
-     * @expectedException \InvalidArgumentException
-     */
     public function testInvalidParametersThrows()
     {
+        $this->expectException(\InvalidArgumentException::class);
         $conn = new Connection(['something' => ''], $this->getLoop());
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     */
     public function testNoUserThrows()
     {
+        $this->expectException(\InvalidArgumentException::class);
         $conn = new Connection(["database" => "some_database"], $this->getLoop());
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     */
     public function testNoDatabaseThrows()
     {
+        $this->expectException(\InvalidArgumentException::class);
         $conn = new Connection(["user" => "some_user"], $this->getLoop());
     }
 }
