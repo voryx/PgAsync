@@ -93,7 +93,7 @@ Install pgasync:
 - Connection pooling (basic pooling)
 
 ## What it can't quite do yet
-- Transactions
+- Transactions (Actually though, just grab a connection and you can run your transaction on that single connection)
 
 ## What's next
 - Add more testing
