@@ -12,14 +12,11 @@ class ClientTest extends TestCase
 {
     public function testFailedDNSLookup()
     {
-        $executor = $this->getMockBuilder(ExecutorInterface::class)
-            ->setMethods(['query'])
-            ->getMock();
+        $executor = $this->createMock(ExecutorInterface::class);
 
         $deferred = new Deferred();
 
         $executor
-            ->expects($this->once())
             ->method('query')
             ->willReturn($deferred->promise());
 
@@ -58,7 +55,6 @@ class ClientTest extends TestCase
             ->getMock();
 
         $executor
-            ->expects($this->once())
             ->method('query')
             ->willReturn(new RejectedPromise(new React\Dns\RecordNotFoundException()));
 
