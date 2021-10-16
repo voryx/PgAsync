@@ -2,6 +2,7 @@
 
 namespace PgAsync\Command;
 
+use pq\Exception\InvalidArgumentException;
 use Rx\ObserverInterface;
 
 class Sync implements CommandInterface
@@ -10,8 +11,11 @@ class Sync implements CommandInterface
 
     private $description;
 
-    public function __construct(string $description = "", ObserverInterface $observer)
+    public function __construct(string $description = "", ?ObserverInterface $observer = null)
     {
+        if (null === $observer) {
+            throw new InvalidArgumentException('Observer interface is required.');
+        }
         $this->description = $description;
         $this->observer    = $observer;
     }
