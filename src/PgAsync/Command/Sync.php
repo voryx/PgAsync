@@ -10,7 +10,7 @@ class Sync implements CommandInterface
 
     private $description;
 
-    public function __construct(string $description = "", ObserverInterface $observer)
+    public function __construct(string $description, ObserverInterface $observer)
     {
         $this->description = $description;
         $this->observer    = $observer;
