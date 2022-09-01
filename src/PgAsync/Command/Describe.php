@@ -16,7 +16,6 @@ class Describe implements CommandInterface
     {
         $this->name              = $name;
         $this->portalOrStatement = 'P';
-        $this->subject           = new Subject();
     }
 
     public function encodedMessage(): string
