@@ -10,7 +10,7 @@ class BoolTest extends TestCase
     public function testBools()
     {
 
-        $client = new Client(["user" => $this::getDbUser(), "database" => $this::getDbName()]);
+        $client = new Client(["user" => $this::getDbUser(), "password" => $this::getDbUser(), "database" => $this::getDbName()]);
 
         $count = $client->query("SELECT * FROM thing");
 
@@ -57,7 +57,7 @@ class BoolTest extends TestCase
      */
     public function testBoolParam()
     {
-        $client = new Client(["user" => $this::getDbUser(), "database" => $this::getDbName()]);
+        $client = new Client(["user" => $this::getDbUser(), "password" => $this::getDbUser(), "database" => $this::getDbName()]);
 
         $args = [false, 1];
 

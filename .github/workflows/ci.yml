@@ -1,0 +1,60 @@
+name: Continuous Integration
+on:
+  push:
+    branches:
+      - 'master'
+      - 'refs/heads/[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+jobs:
+  supported-versions-matrix:
+    name: Supported Versions Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.supported-versions-matrix.outputs.version }}
+    steps:
+      - uses: actions/checkout@v1
+      - id: supported-versions-matrix
+        uses: WyriHaximus/github-action-composer-php-versions-in-range@v1
+  tests:
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    name: Testing on PHP ${{ matrix.php }} with ${{ matrix.composer }} dependency preference against Postgres ${{ matrix.postgres }}
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ${{ fromJson(needs.supported-versions-matrix.outputs.version) }}
+        postgres: [12, 13]
+        composer: [lowest, locked, highest]
+    needs:
+      - supported-versions-matrix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE USER pgasync"
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER ROLE pgasync PASSWORD 'pgasync'"
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE USER pgasyncpw"
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER ROLE pgasyncpw PASSWORD 'example_password'"
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE pgasync_test OWNER pgasync"
+          PGPASSWORD=pgasync psql -h localhost -U pgasync -f tests/test_db.sql pgasync_test
+#          PGPASSWORD=postgres cat tests/test_db.sql | xargs -I % psql -h localhost -U postgres -c "%"
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: xdebug
+      - uses: ramsey/composer-install@v2
+        with:
+          dependency-versions: ${{ matrix.composer }}
+#      - run: vendor/bin/phpunit --testdox
+      - run: vendor/bin/phpunit

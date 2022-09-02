@@ -14,6 +14,7 @@ class ConnectionTest extends TestCase
     {
         $conn = new Connection([
             "user"            => $this->getDbUser(),
+            "password"        => $this::getDbUser(),
             "database"        => $this::getDbName(),
             "auto_disconnect" => true
         ], $this->getLoop());
@@ -44,6 +45,7 @@ class ConnectionTest extends TestCase
     {
         $conn = new Connection([
             "user"            => $this->getDbUser(),
+            "password"        => $this::getDbUser(),
             "database"        => $this::getDbName(),
             "auto_disconnect" => true
         ], $this->getLoop());
@@ -74,6 +76,7 @@ class ConnectionTest extends TestCase
     {
         $conn = new Connection([
             "user"            => $this->getDbUser(),
+            "password"        => $this::getDbUser(),
             "database"        => $this::getDbName(),
             "auto_disconnect" => true
         ], $this->getLoop());
@@ -106,6 +109,7 @@ class ConnectionTest extends TestCase
         $conn = new Connection([
             "host"            => 'host.invalid',
             "user"            => $this->getDbUser(),
+            "password"        => $this::getDbUser(),
             "database"        => $this::getDbName(),
             "auto_disconnect" => true
         ], $this->getLoop());
@@ -141,6 +145,7 @@ class ConnectionTest extends TestCase
     {
         $conn = new Connection([
             "user"            => $this->getDbUser(),
+            "password"        => $this::getDbUser(),
             "database"        => $this::getDbName()
         ], $this->getLoop());
 
@@ -175,6 +180,7 @@ class ConnectionTest extends TestCase
     {
         $conn = new Connection([
             "user"            => $this->getDbUser(),
+            "password"        => $this::getDbUser(),
             "database"        => $this::getDbName(),
             "auto_disconnect" => true
         ], $this->getLoop());
@@ -210,6 +216,7 @@ class ConnectionTest extends TestCase
         $this->markTestSkipped('We have disabled cancellation for the time being.');
         $conn = new Connection([
             "user"            => $this->getDbUser(),
+            "password"        => $this::getDbUser(),
             "database"        => $this::getDbName(),
             "auto_disconnect" => true
         ], $this->getLoop());
@@ -251,6 +258,7 @@ class ConnectionTest extends TestCase
     {
         $conn = new Connection([
             "user"            => $this->getDbUser(),
+            "password"        => $this::getDbUser(),
             "database"        => $this::getDbName()
         ], $this->getLoop());
 
@@ -294,6 +302,7 @@ class ConnectionTest extends TestCase
     {
         $conn = new Connection([
             "user"            => $this->getDbUser(),
+            "password"        => $this::getDbUser(),
             "database"        => $this::getDbName()
         ], $this->getLoop());
 
@@ -332,6 +341,7 @@ class ConnectionTest extends TestCase
     public function testCancellationWithImmediateQueryQueuedUp() {
         $conn = new Connection([
             "user"            => $this->getDbUser(),
+            "password"        => $this::getDbUser(),
             "database"        => $this::getDbName()
         ], $this->getLoop());
 
@@ -367,6 +377,7 @@ class ConnectionTest extends TestCase
     public function testArrayInParameters() {
         $conn = new Connection([
             "user"            => $this->getDbUser(),
+            "password"        => $this::getDbUser(),
             "database"        => $this::getDbName()
         ], $this->getLoop());
 

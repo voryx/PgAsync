@@ -11,7 +11,7 @@ class ClientTest extends TestCase
 {
     public function testClientReusesIdleConnection()
     {
-        $client = new Client(["user" => $this->getDbUser(), "database" => $this::getDbName()], $this->getLoop());
+        $client = new Client(["user" => $this->getDbUser(), "password" => $this::getDbUser(), "database" => $this::getDbName()], $this->getLoop());
         
         $hello = null;
         
@@ -81,6 +81,7 @@ class ClientTest extends TestCase
     {
         $client = new Client([
             "user"            => $this->getDbUser(),
+            "password"        => $this::getDbUser(),
             "database"        => $this::getDbName(),
             "auto_disconnect" => true
         ], $this->getLoop());
@@ -115,6 +116,7 @@ class ClientTest extends TestCase
     {
         $client = new Client([
             "user"            => $this->getDbUser(),
+            "password"        => $this::getDbUser(),
             "database"        => $this::getDbName(),
         ], $this->getLoop());
 
@@ -156,6 +158,7 @@ class ClientTest extends TestCase
     {
         $client = new Client([
             "user"            => $this->getDbUser(),
+            "password"        => $this::getDbUser(),
             "database"        => $this::getDbName(),
             "max_connections" => 3
         ], $this->getLoop());
@@ -196,6 +199,7 @@ class ClientTest extends TestCase
     {
         $client = new Client([
             "user"            => $this->getDbUser(),
+            "password"        => $this::getDbUser(),
             "database"        => $this::getDbName(),
         ], $this->getLoop());
 

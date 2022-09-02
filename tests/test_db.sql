@@ -7,15 +7,15 @@ CREATE TABLE thing (
 );
 
 INSERT INTO thing(thing_type, thing_description, thing_cost, thing_in_stock)
-    VALUES('pen', NULL, 50.23, 'f');
+VALUES('pen', NULL, 50.23, 'f');
 INSERT INTO thing(thing_type, thing_description, thing_cost, thing_in_stock)
-    VALUES('pencil', 'something you write with', 27.50, null);
+VALUES('pencil', 'something you write with', 27.50, null);
 INSERT INTO thing(thing_type, thing_description, thing_cost, thing_in_stock)
-    VALUES('marker', NULL, 50.23, 't');
+VALUES('marker', NULL, 50.23, 't');
 
 CREATE TABLE test_bool_param (
   id serial not null,
   b boolean,
   primary key(id)
 );
-insert into test_bool_param(b) values(true);
+INSERT INTO(test_bool_param(b) VALUES(true);
