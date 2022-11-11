@@ -9,6 +9,8 @@ class NullPasswordTest extends TestCase
 {
     public function testNullPassword()
     {
+        $this->markTestSkipped('Not using null password anymore. Maybe should setup tests to twst this again.');
+
         $client = new Client([
             "user"     => $this::getDbUser(),
             "database" => $this::getDbName(),
