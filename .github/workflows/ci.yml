@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - 'master'
-      - 'migrate-ci-to-github-actions'
       - 'refs/heads/[0-9]+.[0-9]+.[0-9]+'
   pull_request:
 jobs:
