@@ -18,4 +18,4 @@ CREATE TABLE test_bool_param (
   b boolean,
   primary key(id)
 );
-INSERT INTO(test_bool_param(b) VALUES(true);
+INSERT INTO test_bool_param(b) VALUES(true);

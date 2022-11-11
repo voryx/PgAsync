@@ -1,0 +1,17 @@
+version: '3.7'
+
+services:
+  pgasync-postgres:
+    container_name: pgasync-postgres
+    image: postgres:11
+    environment:
+      - PGDATA=/database
+      - POSTGRES_PASSWORD=some_password
+      - TZ=America/New_York
+    volumes:
+      - .:/app
+      - ./database:/database
+      - ./../tests/test_db.sql:/app/test_db.sql
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
