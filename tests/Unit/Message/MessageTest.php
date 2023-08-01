@@ -15,7 +15,7 @@ class MessageTest extends TestCase
         $rawNotificationMessage = hex2bin('41000000190000040c686572650048656c6c6f20746865726500');
 
 
-        $notificationResponse = \PgAsync\Message\Message::createMessageFromIdentifier($rawNotificationMessage[0]);
+        $notificationResponse = \PgAsync\Message\Message::createMessageFromIdentifier($rawNotificationMessage[0], []);
         $this->assertInstanceOf(\PgAsync\Message\NotificationResponse::class, $notificationResponse);
         /** @var \PgAsync\Message\NotificationResponse */
         $notificationResponse->parseData($rawNotificationMessage);

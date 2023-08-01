@@ -42,5 +42,9 @@
   "require-dev": {
     "phpunit/phpunit": ">=8.5.23 || ^6.5.5",
     "react/dns": "^1.0"
+  },
+  "scripts": {
+    "docker-up": "cd docker && docker-compose up -d",
+    "docker-down": "cd docker && docker-compose down"
   }
 }

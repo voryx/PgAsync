@@ -10,6 +10,8 @@ use PgAsync\Command\Describe;
 use PgAsync\Command\Execute;
 use PgAsync\Command\Parse;
 use PgAsync\Command\PasswordMessage;
+use PgAsync\Command\SaslInitialResponse;
+use PgAsync\Command\SaslResponse;
 use PgAsync\Command\Sync;
 use PgAsync\Command\Terminate;
 use PgAsync\Message\Authentication;
@@ -119,6 +121,9 @@ class Connection extends EventEmitter
     /** @var bool */
     private $cancelRequested;
 
+    /** @var ScramSha256 */
+    private $scramSha256;
+
     /**
      * Can be 'I' for Idle, 'T' if in transactions block
      * or 'E' if in failed transaction block (queries will fail until end of trans)
@@ -174,6 +179,7 @@ class Connection extends EventEmitter
         $this->cancelRequested     = false;
 
         $this->parameters          = $parameters;
+        $this->scramSha256         = new ScramSha256($parameters['user'], $this->password ?: '');
     }
 
     private function start()
@@ -268,7 +274,9 @@ class Connection extends EventEmitter
 
         $type = $data[0];
 
-        $message = Message::createMessageFromIdentifier($type);
+        $message = Message::createMessageFromIdentifier($type, [
+            'SCRAM_SHA_256' => $this->scramSha256
+        ]);
         if ($message !== false) {
             $this->currentMessage = $message;
             return $data;
@@ -386,6 +394,28 @@ class Connection extends EventEmitter
             $this->connStatus = $this::CONNECTION_AUTH_OK;
 
             return;
+        }
+
+        if ($message->getAuthCode() === $message::AUTH_SCRAM) {
+            $saslInitialResponse = new SaslInitialResponse($this->scramSha256);
+            $this->stream->write($saslInitialResponse->encodedMessage());
+
+            return;
+        }
+
+        if ($message->getAuthCode() === $message::AUTH_SCRAM_CONTINUE) {
+            $saslResponse = new SaslResponse($this->scramSha256);
+            $this->stream->write($saslResponse->encodedMessage());
+
+            return;
+        }
+
+        if ($message->getAuthCode() === $message::AUTH_SCRAM_FIN) {
+            if ($this->scramSha256->verify()) {
+                return;
+            }
+
+            $this->lastError = 'Invalid server signature sent by server on SCRAM FIN stage';
         }
 
         $this->connStatus = $this::CONNECTION_BAD;

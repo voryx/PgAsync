@@ -15,3 +15,16 @@ services:
       - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+
+  pgasync-postgres-15:
+    container_name: pgasync-postgres-15
+    image: postgres:15
+    environment:
+      - PGDATA=/database
+      - POSTGRES_USER=sampleuser
+      - POSTGRES_PASSWORD=some_password
+      - TZ=America/New_York
+    volumes:
+      - .:/app
+    ports:
+      - "5415:5432"

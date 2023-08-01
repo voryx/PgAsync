@@ -23,11 +23,11 @@ abstract class Message implements ParserInterface
         return Message::int32($len + 4) . $s;
     }
 
-    public static function createMessageFromIdentifier(string $identifier): ParserInterface
+    public static function createMessageFromIdentifier(string $identifier, array $dependencies): ParserInterface
     {
         switch ($identifier) {
             case 'R':
-                return new Authentication();
+                return new Authentication($dependencies['SCRAM_SHA_256']);
             case 'K':
                 return new BackendKeyData();
             case 'C':
