@@ -19,7 +19,6 @@ class Parse implements CommandInterface
     {
         $this->name        = $name;
         $this->queryString = $queryString;
-        $this->subject     = new Subject();
     }
 
     // there is mechanisms to pre-describe types - we aren't getting into that
