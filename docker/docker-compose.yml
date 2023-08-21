@@ -7,6 +7,7 @@ services:
     environment:
       - PGDATA=/database
       - POSTGRES_PASSWORD=some_password
+      - POSTGRES_INITDB_ARGS=--auth-host=md5
       - TZ=America/New_York
     volumes:
       - .:/app
@@ -16,15 +17,7 @@ services:
     ports:
       - "5432:5432"
 
-  pgasync-postgres-15:
-    container_name: pgasync-postgres-15
-    image: postgres:15
-    environment:
-      - PGDATA=/database
-      - POSTGRES_USER=sampleuser
-      - POSTGRES_PASSWORD=some_password
-      - TZ=America/New_York
-    volumes:
-      - .:/app
-    ports:
-      - "5415:5432"
+configs:
+  pg_hba:
+    file: pg_hba_new.conf
+

@@ -8,14 +8,13 @@ use Rx\Observer\CallbackObserver;
 
 class ScramSha256PasswordTest extends TestCase
 {
-    public function testScamSha256Login()
+    public function testScramSha256Login()
     {
         $client = new Client([
-            "user" => 'sampleuser',
-            "database" => 'postgres',
-            "port" => 5415,
+            "user" => 'scram_user',
+            "database" => $this->getDbName(),
             "auto_disconnect" => true,
-            "password" => "some_password"
+            "password" => "scram_password"
         ], $this->getLoop());
 
         $hello = null;
