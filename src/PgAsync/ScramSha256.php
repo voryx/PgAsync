@@ -199,7 +199,7 @@ class ScramSha256
         return $clientKey ^ $clientSignature;
     }
 
-    private function checkStage(int $stage): void
+    private function checkStage(int $stage)
     {
         if ($this->currentStage < $stage) {
             throw new \LogicException('Invalid Stage of SCRAM authorization');
