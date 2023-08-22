@@ -21,6 +21,7 @@ jobs:
         image: postgres:${{ matrix.postgres }}
         env:
           POSTGRES_PASSWORD: postgres
+          POSTGRES_INITDB_ARGS: --auth-host=md5
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
@@ -34,7 +35,7 @@ jobs:
       fail-fast: false
       matrix:
         php: ${{ fromJson(needs.supported-versions-matrix.outputs.version) }}
-        postgres: [12, 13]
+        postgres: [12, 13, 14, 15]
         composer: [lowest, locked, highest]
     needs:
       - supported-versions-matrix
@@ -46,6 +47,8 @@ jobs:
           PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER ROLE pgasync PASSWORD 'pgasync'"
           PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE USER pgasyncpw"
           PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER ROLE pgasyncpw PASSWORD 'example_password'"
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE USER scram_user"
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "SET password_encryption='scram-sha-256';ALTER ROLE scram_user PASSWORD 'scram_password'"
           PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE pgasync_test OWNER pgasync"
           PGPASSWORD=pgasync psql -h localhost -U pgasync -f tests/test_db.sql pgasync_test
 #          PGPASSWORD=postgres cat tests/test_db.sql | xargs -I % psql -h localhost -U postgres -c "%"

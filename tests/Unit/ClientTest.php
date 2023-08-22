@@ -50,9 +50,7 @@ class ClientTest extends TestCase
 
     public function testFailedDNSLookupEarlyRejection()
     {
-        $executor = $this->getMockBuilder(ExecutorInterface::class)
-            ->setMethods(['query'])
-            ->getMock();
+        $executor = $this->createMock(ExecutorInterface::class);
 
         $executor
             ->method('query')

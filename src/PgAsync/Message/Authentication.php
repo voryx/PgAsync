@@ -2,6 +2,8 @@
 
 namespace PgAsync\Message;
 
+use PgAsync\ScramSha256;
+
 class Authentication extends Message
 {
     const AUTH_OK = 0; // AuthenticationOk
@@ -12,10 +14,25 @@ class Authentication extends Message
     const AUTH_GSS = 7; // AuthenticationGSS
     const AUTH_GSS_CONTINUE = 8; // AuthenticationGSSContinue
     const AUTH_SSPI = 9; // AuthenticationSSPI
+    const AUTH_SCRAM = 10; // AuthenticationSASL
+    const AUTH_SCRAM_CONTINUE = 11; // AuthenticationSASLContinue
+    const AUTH_SCRAM_FIN = 12; // AuthenticationSASLFinal
 
     private $authCode;
 
     private $salt;
+
+    /** @var ScramSha256 */
+    private $scramSha256;
+
+    private $iteration;
+
+    private $nonce;
+
+    public function __construct(ScramSha256 $scramSha265)
+    {
+        $this->scramSha256 = $scramSha265;
+    }
 
     /**
      * @inheritDoc
@@ -47,6 +64,23 @@ class Authentication extends Message
                 break; // AuthenticationGSSContinue
             case $this::AUTH_SSPI:
                 break; // AuthenticationSSPI
+            case $this::AUTH_SCRAM:
+                $this->scramSha256->beginFirstClientMessageStage();
+                break;
+            case $this::AUTH_SCRAM_CONTINUE:
+                $content = $this->getContent($rawMessage);
+                $parts = explode(',', $content);
+                $this->scramSha256->beginFinalClientMessageStage(
+                    substr($parts[0], 2),
+                    substr($parts[1], 2),
+                    (int) substr($parts[2], 2)
+                );
+
+                break;
+            case $this::AUTH_SCRAM_FIN:
+                $content = $this->getContent($rawMessage);
+                $this->scramSha256->beginVerificationStage(substr($content, 2));
+                break;
         }
 
         $this->authCode = $authCode;
@@ -69,5 +103,11 @@ class Authentication extends Message
         }
 
         return $this->salt;
+    }
+
+    private function getContent(string $rawMessage): string
+    {
+        $messageLength = unpack('N', substr($rawMessage, 1, 4))[1];
+        return substr($rawMessage, 9, $messageLength - 8);
     }
 }
