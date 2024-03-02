@@ -79,6 +79,35 @@ $client->listen('some_channel')
 $client->query("NOTIFY some_channel, 'Hello World'")->subscribe();
 ```
 
+## Example - Connecting over TLS with CA certificate file
+```php
+
+$client = new PgAsync\Client([
+    "host"                => "127.0.0.1",
+    "port"                => "5432",
+    "user"                => "matt",
+    "database"            => "matt",
+    "tls"                 => "verify-full",
+    "tls_connector_flags" => [
+        "cafile" => "/path/to/ca.crt",
+    ],
+]);
+
+$client->query('SELECT * FROM channel')->subscribe(
+    function ($row) {
+        var_dump($row);
+    },
+    function ($e) {
+        echo "Failed.\n";
+    },
+    function () {
+        echo "Complete.\n";
+    }
+);
+
+
+```
+
 ## Install
 With [composer](https://getcomposer.org/) install into you project with:
 
