@@ -186,8 +186,7 @@ class ConnectionPool
             }
         }
 
-        $activeCount = count($this->connections) - count($this->pendingReservationConnections);
-        if ($this->autoDisconnect || $activeCount < $this->maxConnections) {
+        if ($this->autoDisconnect || count($this->connections) < $this->maxConnections) {
             return $this->createConnection();
         }
 
@@ -244,8 +243,7 @@ class ConnectionPool
             $connection = $this->tryAcquire($waiter['forTransaction']);
             if ($connection === null) {
                 if ($waiter['forTransaction']) {
-                    $activeCount = count($this->connections) - count($this->pendingReservationConnections);
-                    if ($this->autoDisconnect || $activeCount < $this->maxConnections) {
+                    if ($this->autoDisconnect || count($this->connections) < $this->maxConnections) {
                         $newConnection = $this->createConnection();
                         $this->pendingReservationConnections[spl_object_hash($newConnection)] = $newConnection;
                         $this->markConnectionReserved($newConnection);
