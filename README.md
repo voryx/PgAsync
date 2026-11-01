@@ -125,30 +125,10 @@ $client = new PgAsync\Client([
 ]);
 ```
 
-Use `transaction()` for a scoped transaction that auto-commits on success and rolls back on failure:
+Use `transaction()` to start a transaction, then call `commit()` or `rollback()` when done:
 
 ```php
-$client->transaction(function (PgAsync\Transaction $tx) {
-    return $tx->executeStatement(
-        'INSERT INTO invoices(inv_no, customer_id, amount) VALUES ($1, $2, $3)',
-        ['1234A', 1, 35.75]
-    )->concat(
-        $tx->query('SELECT SUM(amount) AS balance FROM invoices WHERE customer_id = 1')
-    );
-})->subscribe(
-    function () {
-        echo "Committed.\n";
-    },
-    function ($e) {
-        echo "Rolled back: " . $e->getMessage() . "\n";
-    }
-);
-```
-
-For manual control, use `beginTransaction()` and call `commit()` or `rollback()` yourself:
-
-```php
-$client->beginTransaction()->flatMap(function (PgAsync\Transaction $tx) {
+$client->transaction()->flatMap(function (PgAsync\Transaction $tx) {
     return $tx->executeStatement('INSERT INTO channel(name) VALUES ($1)', ['example'])
         ->concat($tx->query('SELECT COUNT(*) AS c FROM channel'))
         ->concat($tx->commit());
@@ -176,7 +156,7 @@ Install pgasync:
 - Return results asynchronously (using Observables - you get data one row at a time as it comes from the db server)
 - Prepared statements (as parameterized queries)
 - Connection pooling (basic pooling)
-- Transactions (scoped and explicit)
+- Transactions
 
 ## What's next
 - Add more testing
