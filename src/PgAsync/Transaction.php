@@ -27,14 +27,6 @@ final class Transaction
         $this->release    = $release;
     }
 
-    /**
-     * Whether the transaction can still be committed or rolled back.
-     */
-    public function isActive(): bool
-    {
-        return !$this->finishing && !$this->finished;
-    }
-
     public function query(string $queryString): Observable
     {
         if ($this->finished) {
