@@ -116,7 +116,7 @@ class ScopedTransactionTest extends TestCase
 
         $client->closeNow();
         $this->assertNotNull($error);
-        $this->assertStringContainsString('division by zero', $error->getMessage());
+        $this->assertSame(1, preg_match('/division by zero/', $error->getMessage()));
         $this->assertSame(0, $count, 'The insert was rolled back, and the single connection was released for the count');
         $this->getLoop()->run();
     }
