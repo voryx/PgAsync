@@ -72,12 +72,20 @@ final class Transaction
         return $this->connection->queryUntilReady($sql)->flatMap(function ($status) use ($validate) {
             $error = $validate($status);
             if ($error !== null) {
-                return Observable::error($error);
+                return $this->abandon()->concat(Observable::error($error));
             }
 
             $this->markFinished();
 
             return Observable::of($status);
+        })->catch(function (\Throwable $e) {
+            if ($this->finished) {
+                return Observable::error($e);
+            }
+
+            // COMMIT/ROLLBACK itself failed (a deferred constraint, a lost connection): do not keep the connection
+            // reserved forever.
+            return $this->abandon()->concat(Observable::error($e));
         });
     }
 
@@ -107,6 +115,38 @@ final class Transaction
         }
 
         return null;
+    }
+
+    /**
+     * Gives the connection back after a failed COMMIT/ROLLBACK, rolling back first when the server still has the
+     * transaction open so the next user of the connection does not inherit it.
+     */
+    private function abandon(): Observable
+    {
+        if ($this->finished) {
+            return Observable::empty();
+        }
+
+        $this->finished = true;
+
+        $release = function () {
+            ($this->release)();
+        };
+
+        if ($this->connection->getBackendTransactionStatus() === 'I') {
+            $release();
+
+            return Observable::empty();
+        }
+
+        return $this->connection->queryUntilReady('ROLLBACK')
+            ->catch(function () {
+                return Observable::empty();
+            })
+            ->finally($release)
+            ->filter(function () {
+                return false;
+            });
     }
 
     private function inactiveError(): Observable
