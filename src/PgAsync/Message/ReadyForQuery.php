@@ -6,7 +6,7 @@ class ReadyForQuery implements ParserInterface
 {
     use ParserTrait;
 
-    private $backendTransactionStatus;
+    private $backendTransactionStatus = 'UNKNOWN';
 
     /**
      * @inheritDoc
@@ -32,10 +32,7 @@ class ReadyForQuery implements ParserInterface
         return 'Z';
     }
 
-    /**
-     * @return mixed
-     */
-    public function getBackendTransactionStatus()
+    public function getBackendTransactionStatus(): string
     {
         return $this->backendTransactionStatus;
     }

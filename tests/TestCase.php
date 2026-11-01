@@ -84,7 +84,7 @@ class TestCase extends BaseTestCase
         return self::DBNAME;
     }
 
-    public static function clientFromEnv(array $parameters = [], LoopInterface $loop = null, ConnectorInterface $connector = null): Client
+    public static function clientFromEnv(array $parameters = [], ?LoopInterface $loop = null, ?ConnectorInterface $connector = null): Client
     {
         $dsn = getenv('TEST_POSTGRES_DSN');
         if (is_string($dsn)) {
@@ -103,7 +103,7 @@ class TestCase extends BaseTestCase
                     $parameters['password'] = $parts['pass'];
                 }
                 if (array_key_exists('path', $parts) && !array_key_exists('database', $parameters)) {
-                    $parameters['database'] = trim($parts['password'], '/');
+                    $parameters['database'] = trim($parts['path'], '/');
                 }
                 if (array_key_exists('query', $parts)) {
                     parse_str($parts['query'], $query);

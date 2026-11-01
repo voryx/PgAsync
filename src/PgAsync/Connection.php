@@ -149,6 +149,9 @@ class Connection extends EventEmitter
      */
     private $backendTransactionStatus = 'UNKNOWN';
 
+    /** @var array<int, array{resolve: callable, reject: callable}> */
+    private $readyForQueryWaiters = [];
+
     /** @var  bool */
     private $auto_disconnect = false;
     private $tls = self::TLS_MODE_PREFER;
@@ -223,7 +226,7 @@ class Connection extends EventEmitter
         $this->scramSha256         = new ScramSha256($parameters['user'], $this->password ?: '');
     }
 
-    private function start()
+    public function start()
     {
         if ($this->connStatus !== static::CONNECTION_NEEDED) {
             throw new \Exception('Connection not in startable state');
@@ -268,10 +271,13 @@ class Connection extends EventEmitter
                     $startup = new StartupMessage();
                     $startup->setParameters($startupParameters);
                     $stream->write($startup->encodedMessage());
+                }, function ($e) {
+                    $this->failAllCommandsWith($e);
+                    $this->connStatus = static::CONNECTION_BAD;
+                    $this->emit('error', [$e]);
                 });
             },
             function ($e) {
-                // connection error
                 $this->failAllCommandsWith($e);
                 $this->connStatus = static::CONNECTION_BAD;
                 $this->emit('error', [$e]);
@@ -295,6 +301,68 @@ class Connection extends EventEmitter
                 return $a;
             },
             0);
+    }
+
+    public function getBackendTransactionStatus(): string
+    {
+        return $this->backendTransactionStatus;
+    }
+
+    /**
+     * @return Observable<string>
+     */
+    public function whenReadyForQuery(): Observable
+    {
+        if ($this->queryState === static::STATE_READY) {
+            return Observable::of($this->backendTransactionStatus);
+        }
+
+        return new AnonymousObservable(function (ObserverInterface $observer) {
+            $this->readyForQueryWaiters[] = [
+                'resolve' => function ($status) use ($observer) {
+                    $observer->onNext($status);
+                    $observer->onCompleted();
+                },
+                'reject' => function ($e) use ($observer) {
+                    $observer->onError($e);
+                },
+            ];
+
+            return new EmptyDisposable();
+        });
+    }
+
+    /**
+     * @return Observable<string>
+     */
+    public function queryUntilReady(string $query): Observable
+    {
+        $connection = $this;
+        return $this->query($query)
+            ->concat(Observable::defer(function () use ($connection) {
+                return $connection->whenReadyForQuery();
+            }))
+            ->takeLast(1);
+    }
+
+    private function resolveReadyForQueryWaiters(string $status)
+    {
+        $waiters = $this->readyForQueryWaiters;
+        $this->readyForQueryWaiters = [];
+
+        foreach ($waiters as $waiter) {
+            $waiter['resolve']($status);
+        }
+    }
+
+    private function rejectReadyForQueryWaiters(\Throwable $e)
+    {
+        $waiters = $this->readyForQueryWaiters;
+        $this->readyForQueryWaiters = [];
+
+        foreach ($waiters as $waiter) {
+            $waiter['reject']($e);
+        }
     }
 
     public function onData($data)
@@ -354,6 +422,9 @@ class Connection extends EventEmitter
     public function onClose()
     {
         $this->connStatus = static::CONNECTION_CLOSED;
+        if ($this->queryState !== static::STATE_READY) {
+            $this->failAllCommandsWith(new \Exception('Connection closed before ready'));
+        }
         $this->emit('close');
     }
 
@@ -564,6 +635,9 @@ class Connection extends EventEmitter
         $this->connStatus     = $this::CONNECTION_OK;
         $this->queryState     = $this::STATE_READY;
         $this->currentCommand = null;
+        $this->backendTransactionStatus = $message->getBackendTransactionStatus();
+        $this->resolveReadyForQueryWaiters($this->backendTransactionStatus);
+        $this->emit('ready');
         $this->processQueue();
     }
 
@@ -577,6 +651,7 @@ class Connection extends EventEmitter
         $e = $e ?: new \Exception('unknown error');
 
         $this->notificationSubject->onError($e);
+        $this->rejectReadyForQueryWaiters($e);
 
         while (count($this->commandQueue) > 0) {
             $c = array_shift($this->commandQueue);
@@ -643,8 +718,10 @@ class Connection extends EventEmitter
     {
         return new AnonymousObservable(
             function (ObserverInterface $observer, ?SchedulerInterface $scheduler = null) use ($query) {
+                $started = false;
                 if ($this->connStatus === $this::CONNECTION_NEEDED) {
                     $this->start();
+                    $started = true;
                 }
                 if ($this->connStatus === $this::CONNECTION_BAD) {
                     $observer->onError(new \Exception('Connection failed'));
@@ -655,6 +732,20 @@ class Connection extends EventEmitter
                 $this->commandQueue[] = $q;
 
                 $this->processQueue();
+
+                if ($started) {
+                    $listener = function ($e) use ($observer) {
+                        $observer->onError($e);
+                    };
+                    $this->on('error', $listener);
+                    return new CallbackDisposable(function () use ($q, $listener) {
+                        if ($this->currentCommand === $q && $q->isActive()) {
+                            $this->cancelRequested = true;
+                        }
+                        $this->removeListener('error', $listener);
+                        $q->cancel();
+                    });
+                }
 
                 return new CallbackDisposable(function () use ($q) {
                     if ($this->currentCommand === $q && $q->isActive()) {
@@ -693,8 +784,10 @@ class Connection extends EventEmitter
 
         return new AnonymousObservable(
             function (ObserverInterface $observer, ?SchedulerInterface $scheduler = null) use ($queryString, $parameters) {
+                $started = false;
                 if ($this->connStatus === $this::CONNECTION_NEEDED) {
                     $this->start();
+                    $started = true;
                 }
                 if ($this->connStatus === $this::CONNECTION_BAD) {
                     $observer->onError(new \Exception('Connetion failed'));
@@ -726,6 +819,24 @@ class Connection extends EventEmitter
                 $this->commandQueue = array_merge($this->commandQueue, $commandGroup);
 
                 $this->processQueue();
+
+                if ($started) {
+                    $listener = function ($e) use ($observer) {
+                        $observer->onError($e);
+                    };
+                    $this->on('error', $listener);
+                    return new CallbackDisposable(function () use ($sync, $commandGroup, $listener) {
+                        if ($this->currentCommand === $sync && $sync->isActive()) {
+                            $this->cancelRequested = true;
+                            $sync->cancel();
+                            return;
+                        }
+                        $this->removeListener('error', $listener);
+                        foreach ($commandGroup as $command) {
+                            $command->cancel();
+                        }
+                    });
+                }
 
                 return new CallbackDisposable(function () use ($sync, $commandGroup) {
                     if ($this->currentCommand === $sync && $sync->isActive()) {

@@ -9,7 +9,7 @@ class ErrorException extends \Exception
     private $errorResponse;
     private $extraInfo;
 
-    public function __construct(ErrorResponse $errorResponse, array $extraInfo = null)
+    public function __construct(ErrorResponse $errorResponse, ?array $extraInfo = null)
     {
         $this->errorResponse = $errorResponse;
         $this->message       = $this->errorResponse->__toString();

@@ -71,8 +71,11 @@ class ClientTest extends TestCase
                 null,
                 function (Exception $e) use (&$exception) {
                     $exception = $e;
+                    $this->cancelCurrentTimeoutTimer();
                 }
             );
+
+        $this->runLoopWithTimeout(5);
 
         $this->assertInstanceOf(Exception::class, $exception);
     }
