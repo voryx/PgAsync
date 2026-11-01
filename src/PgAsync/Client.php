@@ -74,7 +74,56 @@ class Client
         });
     }
 
-    public function transaction(): Observable
+    /**
+     * Runs $work inside a transaction on one reserved connection.
+     *
+     * $work receives the Transaction and returns an Observable of the rows to emit. The transaction commits when that
+     * Observable completes, rolls back (and rethrows the original error) when it fails, and rolls back when the
+     * subscriber unsubscribes first. The connection is always released.
+     *
+     * Without $work this is beginTransaction(): the caller commits or rolls back through the Transaction itself.
+     */
+    public function transaction(?callable $work = null): Observable
+    {
+        if ($work === null) {
+            return $this->beginTransaction();
+        }
+
+        return $this->beginTransaction()->flatMap(function (Transaction $tx) use ($work) {
+            return Observable::defer(function () use ($tx, $work) {
+                return $work($tx);
+            })
+                ->concat(Observable::defer(function () use ($tx) {
+                    return $tx->commit()->filter(function () {
+                        return false;
+                    });
+                }))
+                ->catch(function (\Throwable $e) use ($tx) {
+                    if (!$tx->isActive()) {
+                        return Observable::error($e);
+                    }
+
+                    // The original error wins even when the rollback fails too.
+                    return $tx->rollback()
+                        ->catch(function () {
+                            return Observable::empty();
+                        })
+                        ->concat(Observable::error($e));
+                })
+                ->finally(function () use ($tx) {
+                    if ($tx->isActive()) {
+                        $tx->rollback()->subscribe(null, function () {
+                        });
+                    }
+                });
+        });
+    }
+
+    /**
+     * Reserves a connection and starts a transaction on it. The caller must commit() or rollback() the Transaction,
+     * otherwise the connection stays reserved; prefer transaction($work) which does that.
+     */
+    public function beginTransaction(): Observable
     {
         return Observable::defer(function () {
             return $this->connectionPool->acquire(true)->flatMap(function (Connection $connection) {

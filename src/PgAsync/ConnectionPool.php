@@ -4,7 +4,7 @@ namespace PgAsync;
 
 use React\EventLoop\LoopInterface;
 use React\Socket\ConnectorInterface;
-use Rx\Disposable\EmptyDisposable;
+use Rx\Disposable\CallbackDisposable;
 use Rx\Observable;
 use Rx\Observable\AnonymousObservable;
 use Rx\ObserverInterface;
@@ -35,6 +35,9 @@ class ConnectionPool
     /** @var array<int, array{forTransaction: bool, resolve: callable, reject: callable}> */
     private $connectionWaiters = [];
 
+    /** @var int */
+    private $waiterSequence = 0;
+
     /** @var bool */
     private $autoDisconnect;
 
@@ -63,20 +66,37 @@ class ConnectionPool
         }
 
         return new AnonymousObservable(function (ObserverInterface $observer) use ($forTransaction) {
-            $this->connectionWaiters[] = [
+            $key      = 'waiter' . ++$this->waiterSequence;
+            $disposed = false;
+
+            $this->connectionWaiters[$key] = [
                 'forTransaction' => $forTransaction,
-                'resolve'        => function ($connection) use ($observer) {
+                'resolve'        => function ($connection) use ($observer, &$disposed) {
+                    if ($disposed) {
+                        // The subscriber went away while it waited: hand the connection straight back.
+                        $this->release($connection);
+
+                        return;
+                    }
+
                     $observer->onNext($connection);
                     $observer->onCompleted();
                 },
-                'reject'         => function ($e) use ($observer) {
+                'reject'         => function ($e) use ($observer, &$disposed) {
+                    if ($disposed) {
+                        return;
+                    }
+
                     $observer->onError($e);
                 },
             ];
 
             $this->processConnectionWaiters();
 
-            return new EmptyDisposable();
+            return new CallbackDisposable(function () use ($key, &$disposed) {
+                $disposed = true;
+                unset($this->connectionWaiters[$key]);
+            });
         });
     }
 
